@@ -1,0 +1,11 @@
+{
+    "name": "dev.hai-vr.cross.nps",
+    "displayName": "HVR NPS",
+    "version": "0.0.1",
+    "description": "NPS",
+    "author": "Haï~",
+    "url": "https://docs.hai-vr.dev/docs/cross/nps",
+    "documentationUrl": "https://docs.hai-vr.dev/docs/cross/nps",
+    "changelogUrl": "https://docs.hai-vr.dev/docs/cross/nps",
+    "license": "NOT DEFINED, CHANGE ME"
+}
