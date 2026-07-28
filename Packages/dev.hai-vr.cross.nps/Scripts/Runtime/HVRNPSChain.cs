@@ -85,7 +85,7 @@ namespace HVR.NPS
                 var segment = _memory[i];
                 
                 var pos = SampleCurve(points, distances, currentDist);
-                var nextPos = SampleCurve(points, distances, currentDist + 0.01f);
+                var nextPos = SampleCurve(points, distances, currentDist + segment.segmentLength);
                 
                 var forward = (nextPos - pos).normalized;
                 if (forward == Vector3.zero) forward = transform.up;
