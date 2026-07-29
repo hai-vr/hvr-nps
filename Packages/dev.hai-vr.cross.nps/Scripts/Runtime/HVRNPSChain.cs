@@ -175,26 +175,39 @@ namespace HVR.NPS
                 var forward = (nextPos.position - pos.position).normalized;
                 if (forward == Vector3.zero) forward = transform.up;
                 
-                element.position = pos.position;
-                element.rotation = Quaternion.LookRotation(forward, transform.up) * _reorient;
+                var constriction = pos.constriction;
+                
+                // Order matters in this version of the code.
+                // This is because curveApplies01 makes use of the local position deduced from applying this world space position.
+                element.SetPositionAndRotation(
+                    pos.position,
+                    Quaternion.LookRotation(forward, transform.up) * _reorient
+                );
 
+                var localScaleToApply = Vector3.Scale(segment.scale, new Vector3(constriction, 1f, constriction));
                 if (curveApplies01 < 1f)
                 {
                     if (idleProxies.Length == elements.Length)
                     {
                         var idleProxy = idleProxies[i];
-                        element.position = Vector3.Lerp(idleProxy.position, element.position, curveApplies01);
-                        element.rotation = Quaternion.Lerp(idleProxy.rotation, element.rotation, curveApplies01);
+                        element.SetPositionAndRotation(
+                            Vector3.Lerp(idleProxy.position, element.position, curveApplies01),
+                            Quaternion.Lerp(idleProxy.rotation, element.rotation, curveApplies01)
+                        );
                     }
                     else
                     {
-                        element.localPosition = Vector3.Lerp(segment.position, element.localPosition, curveApplies01);
-                        element.localRotation = Quaternion.Lerp(segment.rotation, element.localRotation, curveApplies01);
+                        element.SetLocalPositionAndRotation(
+                            Vector3.Lerp(segment.position, element.localPosition, curveApplies01),
+                            Quaternion.Lerp(segment.rotation, element.localRotation, curveApplies01)
+                        );
                     }
+                    element.localScale = Vector3.Lerp(segment.scale, localScaleToApply, curveApplies01);
                 }
-                
-                var constriction = pos.constriction;
-                element.localScale = new Vector3(constriction, 1f, constriction);
+                else
+                {
+                    element.localScale = localScaleToApply;
+                }
                 
                 currentDist += segment.segmentLength;
             }
@@ -205,17 +218,16 @@ namespace HVR.NPS
             for (var i = 0; i < elements.Length; i++)
             {
                 var element = elements[i];
+                var segment = _memory[i];
+                element.localScale = segment.scale;
                 if (idleProxies.Length == elements.Length)
                 {
                     var idleProxy = idleProxies[i];
-                    element.position = idleProxy.position;
-                    element.rotation = idleProxy.rotation;
+                    element.SetPositionAndRotation(idleProxy.position, idleProxy.rotation);
                 }
                 else
                 {
-                    var segment = _memory[i];
-                    element.localPosition = segment.position;
-                    element.localRotation = segment.rotation;
+                    element.SetLocalPositionAndRotation( segment.position, segment.rotation);
                 }
             }
         }
