@@ -120,6 +120,12 @@ namespace HVR.NPS
 
         public void DeformElements(List<HVRNPSBeacon> inputBeacons)
         {
+            if (inputBeacons.Count == 0)
+            {
+                FullyApplyIdle();
+                return;
+            }
+            
             // This should work similarly to an IK system (see HVR IK documentation):
             // - Find a good matching curve that pass through the beacons, although not necessarily through all of them.
             // - Based on the real distances, calculate the points.
@@ -129,13 +135,24 @@ namespace HVR.NPS
             var points = new List<NPSPoint>();
             CalculateCurve(points, this, inputBeacons);
             
+            // I'm not sure when this can happen. This might be too defensive
+            if (points.Count < 2)
+            {
+                FullyApplyIdle();
+                return;
+            }
+            
             var firstPosition = inputBeacons[0].CalculateCenter(girthRadius);
             var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
             var TODO_FALLOFF = 2f;
             var TODO_MARGIN = 1f;
             var curveApplies01 = Mathf.InverseLerp(_totalLength + TODO_MARGIN + TODO_FALLOFF, _totalLength + TODO_MARGIN, distanceToFirstPosition);
 
-            if (points.Count < 2) return;
+            if (curveApplies01 == 0f)
+            {
+                FullyApplyIdle();
+                return;
+            }
 
             var distances = new List<float>();
             distances.Add(0);
@@ -180,6 +197,26 @@ namespace HVR.NPS
                 element.localScale = new Vector3(constriction, 1f, constriction);
                 
                 currentDist += segment.segmentLength;
+            }
+        }
+
+        private void FullyApplyIdle()
+        {
+            for (var i = 0; i < elements.Length; i++)
+            {
+                var element = elements[i];
+                if (idleProxies.Length == elements.Length)
+                {
+                    var idleProxy = idleProxies[i];
+                    element.position = idleProxy.position;
+                    element.rotation = idleProxy.rotation;
+                }
+                else
+                {
+                    var segment = _memory[i];
+                    element.localPosition = segment.position;
+                    element.localRotation = segment.rotation;
+                }
             }
         }
 
