@@ -13,6 +13,7 @@ we should question using shaders at all for this purpose.
 
 <img width="965" height="733" alt="Unity_kRBGB6wQ7Y" src="https://github.com/user-attachments/assets/fb91b3d6-64b9-4ae3-8265-9a4dacd0d237" />
 
+
 NPS attempts to implement a *(D)PS*-like system for use in environments where:
 - The users are given appropriate systems to share positional information, and
 - That positional information can be directly used by scripts to drive transforms and other object characteristics.
