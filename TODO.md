@@ -15,9 +15,10 @@ Algorithm:
 - ⬜ Handle uniform scaling of the system.
 
 Homing:
-- 🟨 Lerp out of beacons that are too far.
+- ✅ Lerp out of beacons that are too far.
 - ⬜ Ignore some beacons that are behind the forward vector.
 - ✅ Implement HVRNPSDirectionality to allow entrance in specific directions.
+- ⬜ When two terminations are close to each other, prioritize the one that has the most sensible direction in relation to the chain.
 
 JiggleRig integration:
 - 🟨 Lerp between an actual JiggleRig and our transforms when the beacon is too far.
