@@ -192,6 +192,16 @@ namespace HVR.NPS
                     var beacon = i == -1 ? mainBeacon : mainBeacon.next[i];
                     if (beacon.isActiveAndEnabled)
                     {
+                        static Vector3 CalculateTwoWay(Vector3 currentPos, Vector3 nextPos, Vector3 beaconForward)
+                        {
+                            var dot = Vector3.Dot((currentPos - nextPos).normalized, beaconForward);
+                            
+                            // Avoid the sudden change in direction when the direction becomes perpendicular.
+                            var multiplier = Mathf.Lerp(0.05f, 1f, Mathf.InverseLerp(0f, 0.1f, Mathf.Abs(dot)));
+                            
+                            return (dot > 0f ? beaconForward : -beaconForward) * multiplier;
+                        }
+                        
                         var nextPos = beacon.CalculateCenter(girthRadius);
                         
                         var directionality = beacon.ActualDirectionality();
@@ -200,7 +210,7 @@ namespace HVR.NPS
                         {
                             HVRNPSDirectionality.OneWay => -beaconForward,
                             HVRNPSDirectionality.ReverseWay => beaconForward,
-                            HVRNPSDirectionality.TwoWay => Vector3.Dot(currentPos - nextPos, beaconForward) > 0f ? beaconForward : -beaconForward,
+                            HVRNPSDirectionality.TwoWay => CalculateTwoWay(currentPos, nextPos, beaconForward),
                             HVRNPSDirectionality.AlongNormalPlane => NPSMath.Straighten((currentPos - nextPos).normalized, beacon.transform.up),
                             _ => -beaconForward
                         };
@@ -231,14 +241,16 @@ namespace HVR.NPS
 
             if (lastBeacon != null)
             {
+                var dirNormalized = currentDir.normalized;
+                
                 for (var f = 0.1f; f <= _totalLength * 2; f += 0.1f)
                 {
-                    points.Add(new NPSPoint(currentPos + currentDir * f, nextConstriction));
+                    points.Add(new NPSPoint(currentPos + dirNormalized * f, nextConstriction));
                 }
                 
                 var color = k == 0 ? Color.cyan : Color.green;
                 color.a = 0.5f;
-                Debug.DrawLine(currentPos, currentPos + currentDir * (_totalLength * 0.5f), color, 0.01f);
+                Debug.DrawLine(currentPos, currentPos + dirNormalized * (_totalLength * 0.5f), color, 0.01f);
             }
         }
 
