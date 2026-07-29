@@ -4,10 +4,25 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.Rendering;
 
-namespace HVR.NPS
+namespace HVR.Query
 {
-    public class HVRNPSQuery
+    public interface IHVRBeacon
     {
+        Transform AsTransform { get; }
+    }
+
+    public interface IHVRFinder
+    {
+        Transform AsTransform { get; }
+        float Range { get; }
+    }
+    
+    /// Every 0.1 second, we will check if beacons have entered or exited the range of finders.
+    /// The processing is done asynchronously using a compute shader.
+    public class HVRQuery
+    {
+        private const float TimeDelaySeconds = 0.1f;
+        
         private static readonly int BeaconPositions = Shader.PropertyToID("BeaconPositions");
         private static readonly int FinderPositions = Shader.PropertyToID("FinderPositions");
         private static readonly int FinderRangesSq = Shader.PropertyToID("FinderRangesSq");
@@ -15,14 +30,14 @@ namespace HVR.NPS
         private static readonly int BeaconCount = Shader.PropertyToID("BeaconCount");
         private static readonly int FinderCount = Shader.PropertyToID("FinderCount");
 
-        public delegate void BeaconEnterOrExit(HVRNPSBeacon beacon, bool isEntering);
+        public delegate void BeaconEnterOrExit(IHVRBeacon beacon, bool isEntering);
         
-        public static HVRNPSQuery Instance { get; private set; } = new();
+        public static HVRQuery Instance { get; private set; } = new();
         
-        private readonly List<HVRNPSBeacon> _beacons = new();
-        private readonly List<HVRNPSFinder> _finderKeys = new();
-        private readonly Dictionary<HVRNPSFinder, BeaconEnterOrExit> _finders = new();
-        private readonly Dictionary<HVRNPSFinder, HashSet<HVRNPSBeacon>> _findersToBeacons = new();
+        private readonly List<IHVRBeacon> _beacons = new();
+        private readonly List<IHVRFinder> _finderKeys = new();
+        private readonly Dictionary<IHVRFinder, BeaconEnterOrExit> _finderToCallbackDict = new();
+        private readonly Dictionary<IHVRFinder, HashSet<IHVRBeacon>> _finderToBeaconsDict = new();
 
         private ComputeShader _proximityShader;
         private AsyncOperationHandle<ComputeShader> _shaderHandle;
@@ -54,50 +69,50 @@ namespace HVR.NPS
             }
         }
         
-        public void Register(HVRNPSBeacon beacon)
+        public void Register(IHVRBeacon beacon)
         {
             if (!_beacons.Contains(beacon)) _beacons.Add(beacon);
         }
 
-        public void Unregister(HVRNPSBeacon beacon)
+        public void Unregister(IHVRBeacon beacon)
         {
             _beacons.Remove(beacon);
-            foreach (var finderPair in _findersToBeacons)
+            foreach (var finderPair in _finderToBeaconsDict)
             {
                 var finder = finderPair.Key;
                 var finderToBeacons = finderPair.Value;
                 if (finderToBeacons.Remove(beacon))
                 {
-                    _finders[finder](beacon, false);
+                    _finderToCallbackDict[finder](beacon, false);
                 }
             }
         }
 
-        public void Unregister(HVRNPSFinder finder)
+        public void Unregister(IHVRFinder finder)
         {
-            if (_findersToBeacons.TryGetValue(finder, out var finderToBeacons))
+            if (_finderToBeaconsDict.TryGetValue(finder, out var finderToBeacons))
             {
                 _tempBeacons.Clear();
                 _tempBeacons.AddRange(finderToBeacons);
                 foreach (var beacon in _tempBeacons)
                 {
-                    _finders[finder](beacon, false);
+                    _finderToCallbackDict[finder](beacon, false);
                 }
             }
 
             _finderKeys.Remove(finder);
-            _finders.Remove(finder);
-            _findersToBeacons.Remove(finder);
+            _finderToCallbackDict.Remove(finder);
+            _finderToBeaconsDict.Remove(finder);
         }
 
-        public void Register(HVRNPSFinder finder, BeaconEnterOrExit beaconEnterOrExit)
+        public void Register(IHVRFinder finder, BeaconEnterOrExit beaconEnterOrExit)
         {
-            if (!_finders.ContainsKey(finder))
+            if (!_finderToCallbackDict.ContainsKey(finder))
             {
                 _finderKeys.Add(finder);
-                _findersToBeacons[finder] = new HashSet<HVRNPSBeacon>();
+                _finderToBeaconsDict[finder] = new HashSet<IHVRBeacon>();
             }
-            _finders[finder] = beaconEnterOrExit;
+            _finderToCallbackDict[finder] = beaconEnterOrExit;
         }
 
         public void TryUpdateBeaconPositions()
@@ -110,7 +125,7 @@ namespace HVR.NPS
         {
             if (_isComputeScheduled) return;
 
-            if (Time.time - _lastCheckTime < 0.1f) return;
+            if (Time.time - _lastCheckTime < TimeDelaySeconds) return;
 
             var beaconCount = _beacons.Count;
             var finderCount = _finderKeys.Count;
@@ -148,7 +163,7 @@ namespace HVR.NPS
             var beaconPositions = new Vector3[beaconCount];
             for (var i = 0; i < beaconCount; i++)
             {
-                beaconPositions[i] = _beacons[i].transform.position;
+                beaconPositions[i] = _beacons[i].AsTransform.position;
             }
             _beaconPositionsBuffer.SetData(beaconPositions);
 
@@ -157,8 +172,8 @@ namespace HVR.NPS
             for (var i = 0; i < finderCount; i++)
             {
                 var finder = _finderKeys[i];
-                finderPositions[i] = finder.transform.position;
-                finderRangesSq[i] = finder.range * finder.range;
+                finderPositions[i] = finder.AsTransform.position;
+                finderRangesSq[i] = finder.Range * finder.Range;
             }
             _finderPositionsBuffer.SetData(finderPositions);
             _finderRangesSqBuffer.SetData(finderRangesSq);
@@ -202,7 +217,7 @@ namespace HVR.NPS
             _isDataReady = false;
         }
 
-        private readonly List<HVRNPSBeacon> _tempBeacons = new();
+        private readonly List<IHVRBeacon> _tempBeacons = new();
 
         private void ProcessResults()
         {
@@ -212,8 +227,8 @@ namespace HVR.NPS
             for (var f = 0; f < finderCount; f++)
             {
                 var finder = _finderKeys[f];
-                var onBeaconEnterOrExit = _finders[finder];
-                var containedBeacons = _findersToBeacons[finder];
+                var onBeaconEnterOrExit = _finderToCallbackDict[finder];
+                var containedBeacons = _finderToBeaconsDict[finder];
 
                 for (var b = 0; b < beaconCount; b++)
                 {
@@ -224,12 +239,12 @@ namespace HVR.NPS
                     if (isInside && !wasInside)
                     {
                         containedBeacons.Add(beacon);
-                        onBeaconEnterOrExit(beacon, true);
+                        onBeaconEnterOrExit.Invoke(beacon, true);
                     }
                     else if (!isInside && wasInside)
                     {
                         containedBeacons.Remove(beacon);
-                        onBeaconEnterOrExit(beacon, false);
+                        onBeaconEnterOrExit.Invoke(beacon, false);
                     }
                 }
             }

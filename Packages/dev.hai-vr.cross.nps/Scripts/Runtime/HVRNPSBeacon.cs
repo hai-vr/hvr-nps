@@ -1,22 +1,37 @@
+using System;
+using HVR.Query;
 using UnityEngine;
 
 namespace HVR.NPS
 {
     [AddComponentMenu("HVR/NPS/HVR NPS Beacon")]
-    public class HVRNPSBeacon : MonoBehaviour
+    public class HVRNPSBeacon : MonoBehaviour, IHVRBeacon
     {
         public HVRNPSPassage passage;
         public HVRNPSAlignment alignment;
         public HVRNPSConstriction constriction;
 
+        public HVRNPSBeacon[] next = Array.Empty<HVRNPSBeacon>();
+        
+        public Transform AsTransform => transform;
+        
+        private bool _registered;
+
         private void OnEnable()
         {
-            HVRNPSQuery.Instance.Register(this);
+            if (passage != HVRNPSPassage.Internal)
+            {
+                _registered = true;
+                HVRQuery.Instance.Register(this);
+            }
         }
         
         private void OnDisable()
         {
-            HVRNPSQuery.Instance.Unregister(this);
+            if (_registered)
+            {
+                HVRQuery.Instance.Unregister(this);
+            }
         }
 
         public Vector3 CalculateCenter(float girthRadius)
@@ -36,7 +51,11 @@ namespace HVR.NPS
 
         /// This is an intermediate point. The finder may find passage through
         /// another intermediate point, or end in a termination point.
-        Intermediate
+        Intermediate,
+        
+        /// This is an internal point. It cannot be found by finders, but it may be referenced by another beacon,
+        /// which then serves as points of passage.
+        Internal,
     }
 
     public enum HVRNPSAlignment
@@ -50,7 +69,10 @@ namespace HVR.NPS
 
     public enum HVRNPSConstriction
     {
+        /// Entry does not constrict the mesh.
         NoChange,
+        
+        /// Entry constricts the mesh entirely to hide it.
         ConstrictToHide,
     }
 }

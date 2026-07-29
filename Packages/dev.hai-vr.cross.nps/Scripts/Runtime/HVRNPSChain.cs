@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using HVR.Query;
 using UnityEditor;
 using UnityEngine;
 
@@ -71,7 +72,7 @@ namespace HVR.NPS
 
         private void Update()
         {
-            HVRNPSQuery.Instance.TryUpdateBeaconPositions();
+            HVRQuery.Instance.TryUpdateBeaconPositions();
             SortBeacons();
             DeformElements(_sortedBeacons);
         }
@@ -96,10 +97,10 @@ namespace HVR.NPS
 
         private void OnDestroy()
         {
-            HVRNPSQuery.Instance.Dispose();
+            HVRQuery.Instance.Dispose();
         }
 
-        public void DeformElements(IEnumerable<HVRNPSBeacon> inputBeacons)
+        public void DeformElements(List<HVRNPSBeacon> inputBeacons)
         {
             // This should work similarly to an IK system (see HVR IK documentation):
             // - Find a good matching curve that pass through the beacons, although not necessarily through all of them.
@@ -159,7 +160,7 @@ namespace HVR.NPS
             return points[^1];
         }
 
-        private void CalculateCurve(List<NPSPoint> points, HVRNPSChain chain, IEnumerable<HVRNPSBeacon> beacons)
+        private void CalculateCurve(List<NPSPoint> points, HVRNPSChain chain, List<HVRNPSBeacon> beacons)
         {
             var currentPos = chain.transform.position;
             var currentDir = chain.transform.forward;
@@ -167,30 +168,37 @@ namespace HVR.NPS
             HVRNPSBeacon lastBeacon = null;
             
             float nextConstriction = 1f;
-            foreach (var beacon in beacons)
+            foreach (var mainBeacon in beacons)
             {
-                var nextPos = beacon.CalculateCenter(girthRadius);
-                var nextDir = -beacon.transform.forward;
-                NPSMath.PrepareSeilerInterpolation(currentPos, nextPos, currentDir, nextDir, out var b0, out var b3, out var s1, out var s2);
-                var prev = NPSMath.SeilerInterpolate(b0, b3, s1, s2, 0f);
-                points.Add(new NPSPoint(b0, nextConstriction));
-                
-                var color = k == 0 ? Color.cyan : Color.green;
-                for (var f = 0.1f; f < 1f; f += 0.1f)
+                for (var i = -1; i < mainBeacon.next.Length; i++)
                 {
-                    var pos = NPSMath.SeilerInterpolate(b0, b3, s1, s2, f);
-                    points.Add(new NPSPoint(pos, nextConstriction));
-                    Debug.DrawLine(prev, pos, color, 0.01f);
-                    prev = pos;
-                }
-                points.Add(new NPSPoint(b3, nextConstriction));
-                Debug.DrawLine(prev, b3, color, 0.01f);
+                    var beacon = i == -1 ? mainBeacon : mainBeacon.next[i];
+                    if (beacon.isActiveAndEnabled)
+                    {
+                        var nextPos = beacon.CalculateCenter(girthRadius);
+                        var nextDir = -beacon.transform.forward;
+                        NPSMath.PrepareSeilerInterpolation(currentPos, nextPos, currentDir, nextDir, out var b0, out var b3, out var s1, out var s2);
+                        var prev = NPSMath.SeilerInterpolate(b0, b3, s1, s2, 0f);
+                        points.Add(new NPSPoint(b0, nextConstriction));
                 
-                currentPos = nextPos;
-                currentDir = -nextDir;
-                k++;
-                lastBeacon = beacon;
-                nextConstriction = beacon.constriction == HVRNPSConstriction.ConstrictToHide ? 0f : nextConstriction;
+                        var color = k == 0 ? Color.cyan : Color.green;
+                        for (var f = 0.1f; f < 1f; f += 0.1f)
+                        {
+                            var pos = NPSMath.SeilerInterpolate(b0, b3, s1, s2, f);
+                            points.Add(new NPSPoint(pos, nextConstriction));
+                            Debug.DrawLine(prev, pos, color, 0.01f);
+                            prev = pos;
+                        }
+                        points.Add(new NPSPoint(b3, nextConstriction));
+                        Debug.DrawLine(prev, b3, color, 0.01f);
+                
+                        currentPos = nextPos;
+                        currentDir = -nextDir;
+                        k++;
+                        lastBeacon = beacon;
+                        nextConstriction = beacon.constriction == HVRNPSConstriction.ConstrictToHide ? 0f : nextConstriction;
+                    }
+                }
             }
 
             if (lastBeacon != null)
@@ -246,7 +254,7 @@ namespace HVR.NPS
             if (!Application.isPlaying)
             {
                 SortBeacons();
-                CalculateCurve(new List<NPSPoint>(), this, _sortedBeacons);
+                // CalculateCurve(new List<NPSPoint>(), this, _sortedBeacons);
             }
         }
 
