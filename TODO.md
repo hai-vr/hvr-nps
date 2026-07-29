@@ -20,6 +20,7 @@ Homing:
 - ✅ Implement HVRNPSDirectionality to allow entrance in specific directions.
 
 JiggleRig integration:
+- 🟨 Lerp between an actual JiggleRig and our transforms when the beacon is too far.
 - ⬜ Consider controlling the stiffness of the JiggleRig up to an intermediate beacon, if it is outside a termination beacon,
   so that the bone chain can be partially affected past a certain bone.
   - Preleminary testing shows that the portion of the bones that are meant to be static are lagging behind, so we may need

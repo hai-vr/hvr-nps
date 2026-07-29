@@ -25,6 +25,7 @@ namespace HVR.NPS
         public HVRNPSFinder finder;
 
         public Transform[] elements;
+        public Transform[] idleProxies;
         private NPSSegment[] _memory;
         
         public float girthRadius = 0.5f;
@@ -162,8 +163,17 @@ namespace HVR.NPS
 
                 if (curveApplies01 < 1f)
                 {
-                    element.localPosition = Vector3.Lerp(segment.position, element.localPosition, curveApplies01);
-                    element.localRotation = Quaternion.Lerp(segment.rotation, element.localRotation, curveApplies01);
+                    if (idleProxies.Length == elements.Length)
+                    {
+                        var idleProxy = idleProxies[i];
+                        element.position = Vector3.Lerp(idleProxy.position, element.position, curveApplies01);
+                        element.rotation = Quaternion.Lerp(idleProxy.rotation, element.rotation, curveApplies01);
+                    }
+                    else
+                    {
+                        element.localPosition = Vector3.Lerp(segment.position, element.localPosition, curveApplies01);
+                        element.localRotation = Quaternion.Lerp(segment.rotation, element.localRotation, curveApplies01);
+                    }
                 }
                 
                 var constriction = pos.constriction;
