@@ -133,6 +133,7 @@ namespace HVR.NPS
                 var forward = (nextPos.position - pos.position).normalized;
                 if (forward == Vector3.zero) forward = transform.up;
                 
+                element.position = pos.position;
                 element.rotation = Quaternion.LookRotation(forward, transform.up) * _reorient;
                 
                 var constriction = pos.constriction;
