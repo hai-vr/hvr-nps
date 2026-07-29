@@ -1,0 +1,29 @@
+﻿#pragma kernel CSMain
+
+StructuredBuffer<float3> BeaconPositions;
+StructuredBuffer<float3> FinderPositions;
+StructuredBuffer<float> FinderRangesSq;
+RWStructuredBuffer<uint> Results;
+
+uint BeaconCount;
+uint FinderCount;
+
+[numthreads(64, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    uint finderIndex = id.x;
+    if (finderIndex >= FinderCount) return;
+
+    float3 finderPos = FinderPositions[finderIndex];
+    float rangeSq = FinderRangesSq[finderIndex];
+
+    for (uint b = 0; b < BeaconCount; b++)
+    {
+        float3 beaconPos = BeaconPositions[b];
+        float3 diff = beaconPos - finderPos;
+        float distSq = dot(diff, diff);
+        
+        uint resultIndex = finderIndex * BeaconCount + b;
+        Results[resultIndex] = distSq <= rangeSq ? 1 : 0;
+    }
+}

@@ -4,7 +4,10 @@
     "references": [
         "Unity.Mathematics",
         "Unity.Animation.Rigging",
-        "Unity.Burst"
+        "Unity.Burst",
+        "Unity.Collections",
+        "Unity.Addressables",
+        "Unity.ResourceManager"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -13,12 +16,6 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [
-        {
-            "name": "com.unity.animation.rigging",
-            "expression": "1.3.0",
-            "define": "HVR_IK_HAS_ANIMATION_RIGGING"
-        }
-    ],
+    "versionDefines": [],
     "noEngineReferences": false
 }

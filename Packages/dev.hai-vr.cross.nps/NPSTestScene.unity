@@ -276,7 +276,7 @@ GameObject:
   - component: {fileID: 542810357}
   - component: {fileID: 542810358}
   m_Layer: 0
-  m_Name: NPSBeacon
+  m_Name: NPSBeacon-Intermediate
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -309,7 +309,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15b151aaffd344c2a73f59d9ff6f3bd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: HVR.NPS.Runtime::HVRNPSBeacon
-  passage: 0
+  passage: 1
   alignment: 1
 --- !u!1 &604014053
 GameObject:
@@ -404,6 +404,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b986e2c32e3422fafea03c5446a60a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: HVR.NPS.Runtime::HVR.NPS.HVRNPSChain
+  finder: {fileID: 927798422}
   elements:
   - {fileID: 1828525050}
   - {fileID: 1828525049}
@@ -461,7 +462,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e294d0fdd6b67df4687dd31c85f6a67d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: HVR.NPS.Runtime::HVRNPSFinder
-  chain: {fileID: 0}
+  range: 20
 --- !u!1 &1193683570
 GameObject:
   m_ObjectHideFlags: 1
@@ -816,7 +817,7 @@ GameObject:
   - component: {fileID: 2100172698}
   - component: {fileID: 2100172699}
   m_Layer: 0
-  m_Name: NPSBeacon2
+  m_Name: NPSBeacon-Termination
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

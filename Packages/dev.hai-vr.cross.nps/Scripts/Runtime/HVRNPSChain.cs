@@ -8,6 +8,8 @@ namespace HVR.NPS
     [AddComponentMenu("HVR/NPS/HVR NPS Chain")]
     public class HVRNPSChain : MonoBehaviour
     {
+        public HVRNPSFinder finder;
+        
         public Transform[] elements;
         private Segment[] _memory;
         
@@ -35,6 +37,11 @@ namespace HVR.NPS
                     };
                 }
             }
+
+            if (finder != null)
+            {
+                finder.OnBeaconsChanged += WhenBeaconsChanged;
+            }
         }
 
         private void OnDisable()
@@ -46,17 +53,54 @@ namespace HVR.NPS
                     _memory[i].Restore();
                 }
             }
+
+            if (finder != null)
+            {
+                finder.OnBeaconsChanged -= WhenBeaconsChanged;
+            }
+        }
+
+        private void WhenBeaconsChanged(HVRNPSFinder finder, List<HVRNPSBeacon> inBeacons)
+        {
+            beacons = inBeacons.ToArray();
         }
 
         public HVRNPSBeacon[] beacons;
         private quaternion _reorient;
+        
+        private List<HVRNPSBeacon> _sortedBeacons = new();
 
         private void Update()
         {
-            DeformElements(beacons);
+            HVRNPSQuery.Instance.TryUpdateBeaconPositions();
+            SortBeacons();
+            DeformElements(_sortedBeacons);
         }
 
-        public void DeformElements(IEnumerable<HVRNPSBeacon> beacons)
+        private void SortBeacons()
+        {
+            _sortedBeacons.Clear();
+            _sortedBeacons.AddRange(beacons);
+            
+            var rootPosition = transform.position;
+            _sortedBeacons.Sort((a, b) => (a.CalculateCenter(girthRadius) - rootPosition).magnitude.CompareTo((b.CalculateCenter(girthRadius) - rootPosition).magnitude));
+            for (var index = 0; index < _sortedBeacons.Count -1; index++)
+            {
+                HVRNPSBeacon sortedBeacon = _sortedBeacons[index];
+                if (sortedBeacon.passage == HVRNPSPassage.Termination)
+                {
+                    _sortedBeacons.RemoveRange(index + 1, _sortedBeacons.Count - index - 1);
+                    break;
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            HVRNPSQuery.Instance.Dispose();
+        }
+
+        public void DeformElements(IEnumerable<HVRNPSBeacon> inputBeacons)
         {
             // This should work similarly to an IK system (see HVR IK documentation):
             // - Find a good matching curve that pass through the beacons, although not necessarily through all of them.
@@ -65,7 +109,7 @@ namespace HVR.NPS
             // - Apply the changes in rotation.
 
             var points = new List<Vector3>();
-            CalculateCurve(points, this, beacons);
+            CalculateCurve(points, this, inputBeacons);
 
             if (points.Count < 2) return;
 
@@ -76,7 +120,7 @@ namespace HVR.NPS
                 distances[i] = distances[i - 1] + Vector3.Distance(points[i - 1], points[i]);
             }
 
-            _reorient = FromToOrientation(math.forward(), math.right(), math.up(), math.forward());
+            _reorient = NPSMath.FromToOrientation(math.forward(), math.right(), math.up(), math.forward());
         
             var currentDist = 0f;
             for (var i = 0; i < elements.Length; i++)
@@ -123,14 +167,14 @@ namespace HVR.NPS
             {
                 var nextPos = beacon.CalculateCenter(girthRadius);
                 var nextDir = -beacon.transform.forward;
-                PrepareSeilerInterpolation(currentPos, nextPos, currentDir, nextDir, out var b0, out var b3, out var s1, out var s2);
-                var prev = SeilerInterpolate(b0, b3, s1, s2, 0f);
+                NPSMath.PrepareSeilerInterpolation(currentPos, nextPos, currentDir, nextDir, out var b0, out var b3, out var s1, out var s2);
+                var prev = NPSMath.SeilerInterpolate(b0, b3, s1, s2, 0f);
                 points.Add(b0);
                 
                 var color = k == 0 ? Color.cyan : Color.green;
                 for (var f = 0.1f; f < 1f; f += 0.1f)
                 {
-                    var pos = SeilerInterpolate(b0, b3, s1, s2, f);
+                    var pos = NPSMath.SeilerInterpolate(b0, b3, s1, s2, f);
                     points.Add(pos);
                     Debug.DrawLine(prev, pos, color, 0.01f);
                     prev = pos;
@@ -153,29 +197,6 @@ namespace HVR.NPS
                 color.a = 0.5f;
                 Debug.DrawLine(lastPos, lastPos + lastBeacon.transform.forward * 2f, color, 0.01f);
             }
-        }
-
-        private void PrepareSeilerInterpolation(Vector3 pos0, Vector3 pos1, Vector3 direction0, Vector3 direction1, out Vector3 b0, out Vector3 b3, out Vector3 s1, out Vector3 s2)
-        {
-            b0 = pos0;
-            b3 = pos1;
-            var b1 = b0 + direction0;
-            var b2 = b3 + direction1;
-
-            FromBezierToSeiler(b0, b1, b2, b3, out s1, out s2);
-        }
-
-        private void FromBezierToSeiler(Vector3 b0, Vector3 b1, Vector3 b2, Vector3 b3, out Vector3 s1, out Vector3 s2)
-        {
-            s1 = 3 * b1 - b0 - b3;
-            s2 = 3 * b2 - b3 - b0;
-        }
-
-        private Vector3 SeilerInterpolate(Vector3 b0, Vector3 b3, Vector3 s1, Vector3 s2, float t)
-        {
-            var b03 = Vector3.Lerp(b0, b3, t);
-            var s12 = Vector3.Lerp(s1, s2, t);
-            return Vector3.Lerp(b03, s12, (1 - t) * t);
         }
 
         private void OnDrawGizmos()
@@ -211,21 +232,12 @@ namespace HVR.NPS
                 Handles.DrawWireDisc(beaconPos, normal, girthRadius);
                 Handles.DrawWireDisc(beacon.transform.position, normal, girthRadius * 0.1f);
             }
-            
-            CalculateCurve(new List<Vector3>(), this, beacons);
-        }
-        
-        private static quaternion FromToOrientation(float3 fromDirection, float3 toDirection, float3 fromUpwards,
-            float3 toUpwards)
-        {
-            var fromRotation = LookRotationSafe(fromDirection, fromUpwards);
-            var toRotation = LookRotationSafe(toDirection, toUpwards);
-            return math.mul(toRotation, math.inverse(fromRotation));
-        }
-    
-        private static quaternion LookRotationSafe(float3 forward, float3 upward)
-        {
-            return quaternion.LookRotationSafe(forward, upward);
+
+            if (!Application.isPlaying)
+            {
+                SortBeacons();
+                CalculateCurve(new List<Vector3>(), this, _sortedBeacons);
+            }
         }
 
         private struct Segment
