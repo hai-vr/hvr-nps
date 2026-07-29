@@ -17,6 +17,7 @@ Algorithm:
 Homing:
 - ⬜ Lerp out of beacons that are too far.
 - ⬜ Ignore some beacons that are behind the forward vector.
+- ✅ Implement HVRNPSDirectionality to allow entrance in specific directions.
 
 JiggleRig integration:
 - ⬜ Consider controlling the stiffness of the JiggleRig up to an intermediate beacon, if it is outside a termination beacon,

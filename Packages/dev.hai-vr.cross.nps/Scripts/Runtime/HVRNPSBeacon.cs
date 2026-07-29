@@ -10,6 +10,7 @@ namespace HVR.NPS
         public HVRNPSPassage passage;
         public HVRNPSAlignment alignment;
         public HVRNPSConstriction constriction;
+        public HVRNPSDirectionality directionality;
 
         public HVRNPSBeacon[] next = Array.Empty<HVRNPSBeacon>();
         
@@ -41,6 +42,13 @@ namespace HVR.NPS
                 HVRNPSAlignment.Edge => transform.position + transform.up * girthRadius,
                 _ => transform.position
             };
+        }
+
+        public HVRNPSDirectionality ActualDirectionality()
+        {
+            if (directionality != HVRNPSDirectionality.Default) return directionality;
+            
+            return passage == HVRNPSPassage.Termination ? HVRNPSDirectionality.OneWay : HVRNPSDirectionality.TwoWay;
         }
     }
 
@@ -74,5 +82,23 @@ namespace HVR.NPS
         
         /// Entry constricts the mesh entirely to hide it.
         ConstrictToHide,
+    }
+
+    public enum HVRNPSDirectionality
+    {
+        /// One-way if the passage is a termination, two-way otherwise
+        Default,
+        
+        /// Can accept entrance in both ways, as defined by the forward direction.
+        TwoWay,
+        
+        /// Can accept entrance in only the forward direction.
+        OneWay,
+        
+        /// Can accept entrance in only the backward direction. This value is intended to be used by scripting to freeze a state when grabbing without having to rotate the beacon.
+        ReverseWay,
+        
+        /// Can accept entrance in any direction going through the plane defined by the up vector (green).
+        AlongNormalPlane
     }
 }

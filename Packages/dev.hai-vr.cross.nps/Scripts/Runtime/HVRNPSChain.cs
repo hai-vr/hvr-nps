@@ -176,7 +176,18 @@ namespace HVR.NPS
                     if (beacon.isActiveAndEnabled)
                     {
                         var nextPos = beacon.CalculateCenter(girthRadius);
-                        var nextDir = -beacon.transform.forward;
+                        
+                        var directionality = beacon.ActualDirectionality();
+                        var beaconForward = beacon.transform.forward;
+                        var nextDir = directionality switch
+                        {
+                            HVRNPSDirectionality.OneWay => -beaconForward,
+                            HVRNPSDirectionality.ReverseWay => beaconForward,
+                            HVRNPSDirectionality.TwoWay => Vector3.Dot(currentPos - nextPos, beaconForward) > 0f ? beaconForward : -beaconForward,
+                            HVRNPSDirectionality.AlongNormalPlane => NPSMath.Straighten((currentPos - nextPos).normalized, beacon.transform.up),
+                            _ => -beaconForward
+                        };
+                        
                         NPSMath.PrepareSeilerInterpolation(currentPos, nextPos, currentDir, nextDir, out var b0, out var b3, out var s1, out var s2);
                         var prev = NPSMath.SeilerInterpolate(b0, b3, s1, s2, 0f);
                         points.Add(new NPSPoint(b0, nextConstriction));
@@ -243,11 +254,32 @@ namespace HVR.NPS
                 
                 var beaconPos = beacon.CalculateCenter(girthRadius);
                 var rotation = beacon.transform.rotation;
+                var normal = rotation * Vector3.forward;
 
                 Handles.color = beacon.passage == HVRNPSPassage.Termination ? Color.red : Color.green;
-                Handles.ArrowHandleCap(0, beaconPos, rotation, girthRadius, EventType.Repaint);
-                var normal = rotation * Vector3.forward;
-                Handles.DrawWireDisc(beaconPos, normal, girthRadius);
+                
+                var actualDirectionality = beacon.ActualDirectionality();
+                if (actualDirectionality is HVRNPSDirectionality.OneWay or HVRNPSDirectionality.TwoWay)
+                {
+                    Handles.ArrowHandleCap(0, beaconPos, rotation, girthRadius, EventType.Repaint);
+                }
+                if (actualDirectionality is HVRNPSDirectionality.ReverseWay or HVRNPSDirectionality.TwoWay)
+                {
+                    Handles.ArrowHandleCap(0, beaconPos, rotation * Quaternion.Euler(0, 180, 0), girthRadius, EventType.Repaint);
+                }
+                if (actualDirectionality == HVRNPSDirectionality.AlongNormalPlane)
+                {
+                    var planeNormal = beacon.transform.up;
+                    for (var degrees = 0; degrees < 360; degrees += 45)
+                    {
+                        Handles.ArrowHandleCap(0, beaconPos, Quaternion.AngleAxis(degrees, planeNormal) * rotation, girthRadius, EventType.Repaint);
+                    }
+                    Handles.DrawLine(beacon.transform.position, beacon.transform.position + planeNormal * girthRadius * 2);
+                }
+                else
+                {
+                    Handles.DrawWireDisc(beaconPos, normal, girthRadius);
+                }
                 Handles.DrawWireDisc(beacon.transform.position, normal, girthRadius * 0.1f);
             }
 

@@ -13,7 +13,7 @@ namespace HVR.NPS
 
             FromBezierToSeiler(b0, b1, b2, b3, out s1, out s2);
         }
-
+        
         private static void FromBezierToSeiler(Vector3 b0, Vector3 b1, Vector3 b2, Vector3 b3, out Vector3 s1, out Vector3 s2)
         {
             s1 = 3 * b1 - b0 - b3;
