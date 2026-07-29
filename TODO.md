@@ -22,6 +22,8 @@ Homing:
 JiggleRig integration:
 - ⬜ Consider controlling the stiffness of the JiggleRig up to an intermediate beacon, if it is outside a termination beacon,
   so that the bone chain can be partially affected past a certain bone.
+  - Preleminary testing shows that the portion of the bones that are meant to be static are lagging behind, so we may need
+    some tighter control over how JiggleRig applies the bone configuration on the bones that are supposed to be static.
 
 Vixxy integration:
 - ⬜ Figure out how a NPS Chain may communicate its signed distance as a measurement to the beacon.
