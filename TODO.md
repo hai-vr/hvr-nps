@@ -33,3 +33,8 @@ Vixxy integration:
 
 Application integration:
 - ⬜ Allow Beacons to be retrofitted onto someone else's avatar, without having to reupload the avatar.
+
+Basis Framework integration 🔺:
+- ⬜ Split the Query to its own module, if necessary.
+- ⬜ Expose Query to Cilbox.
+- ⬜ Try running HVRNPSChain entirely inside Cilbox.
