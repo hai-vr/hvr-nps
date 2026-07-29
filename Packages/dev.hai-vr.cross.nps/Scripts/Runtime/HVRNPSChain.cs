@@ -14,7 +14,6 @@ namespace HVR.NPS
         
         public float girthRadius = 0.5f;
         public float tipLength = 0.1f;
-        public bool immobileRoot = true;
 
         private void OnEnable()
         {
@@ -134,14 +133,7 @@ namespace HVR.NPS
                 var forward = (nextPos.position - pos.position).normalized;
                 if (forward == Vector3.zero) forward = transform.up;
                 
-                if (immobileRoot && i == 0)
-                {
-                    element.localRotation = _memory[0].rotation;
-                }
-                else
-                {
-                    element.rotation = Quaternion.LookRotation(forward, transform.up) * _reorient;
-                }
+                element.rotation = Quaternion.LookRotation(forward, transform.up) * _reorient;
                 
                 var constriction = pos.constriction;
                 element.localScale = new Vector3(constriction, 1f, constriction);

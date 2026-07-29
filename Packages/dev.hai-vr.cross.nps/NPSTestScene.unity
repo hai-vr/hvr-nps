@@ -407,7 +407,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: HVR.NPS.Runtime::HVR.NPS.HVRNPSChain
   finder: {fileID: 927798422}
   elements:
-  - {fileID: 1828525050}
   - {fileID: 1828525051}
   - {fileID: 1828525049}
   - {fileID: 1828525048}
@@ -417,7 +416,6 @@ MonoBehaviour:
   - {fileID: 1828525044}
   girthRadius: 1.1
   tipLength: 1
-  immobileRoot: 1
   beacons:
   - {fileID: 542810358}
   - {fileID: 2100172699}
@@ -675,11 +673,6 @@ Transform:
 --- !u!4 &1828525049 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -2329849738973147579, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
-  m_PrefabInstance: {fileID: 1828525042}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &1828525050 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 5746564759562468899, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
   m_PrefabInstance: {fileID: 1828525042}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1828525051 stripped
