@@ -8,12 +8,13 @@ namespace HVR.NPS
     public class HVRNPSChain : MonoBehaviour
     {
         public HVRNPSFinder finder;
-        
+
         public Transform[] elements;
         private Segment[] _memory;
         
         public float girthRadius = 0.5f;
         public float tipLength = 0.1f;
+        public bool immobileRoot = true;
 
         private void OnEnable()
         {
@@ -107,16 +108,16 @@ namespace HVR.NPS
             // - Those points restrict two freedoms from the rotation. Calculate the rolls.
             // - Apply the changes in rotation.
 
-            var points = new List<Vector3>();
+            var points = new List<(Vector3, float)>();
             CalculateCurve(points, this, inputBeacons);
 
             if (points.Count < 2) return;
 
-            var distances = new float[points.Count];
-            distances[0] = 0;
+            var distances = new List<float>();
+            distances.Add(0);
             for (var i = 1; i < points.Count; i++)
             {
-                distances[i] = distances[i - 1] + Vector3.Distance(points[i - 1], points[i]);
+                distances.Add(distances[i - 1] + Vector3.Distance(points[i - 1].Item1, points[i].Item1));
             }
 
             _reorient = NPSMath.FromToOrientation(Vector3.forward, Vector3.right, Vector3.up, Vector3.forward);
@@ -130,67 +131,84 @@ namespace HVR.NPS
                 var pos = SampleCurve(points, distances, currentDist);
                 var nextPos = SampleCurve(points, distances, currentDist + segment.segmentLength);
                 
-                var forward = (nextPos - pos).normalized;
+                var forward = (nextPos.Item1 - pos.Item1).normalized;
                 if (forward == Vector3.zero) forward = transform.up;
                 
-                element.position = pos;
-                element.rotation = Quaternion.LookRotation(forward, elements[0].transform.right) * _reorient;
+                if (immobileRoot && i == 0)
+                {
+                    element.localRotation = _memory[0].rotation;
+                }
+                else
+                {
+                    element.rotation = Quaternion.LookRotation(forward, transform.up) * _reorient;
+                }
+                
+                var constriction = pos.Item2;
+                element.localScale = new Vector3(constriction, 1f, constriction);
                 
                 currentDist += segment.segmentLength;
             }
         }
 
-        private Vector3 SampleCurve(List<Vector3> points, float[] distances, float distance)
+        private (Vector3, float) SampleCurve(List<(Vector3, float)> points, List<float> distances, float distance)
         {
             if (distance <= 0) return points[0];
-            if (distance >= distances[distances.Length - 1]) return points[points.Count - 1];
+            if (distance >= distances[^1]) return points[^1];
 
-            for (var i = 0; i < distances.Length - 1; i++)
+            for (var i = 0; i < distances.Count - 1; i++)
             {
                 if (distance >= distances[i] && distance <= distances[i + 1])
                 {
                     var t = (distance - distances[i]) / (distances[i + 1] - distances[i]);
-                    return Vector3.Lerp(points[i], points[i + 1], t);
+                    return (Vector3.Lerp(points[i].Item1, points[i + 1].Item1, t), Mathf.Lerp(points[i].Item2, points[i + 1].Item2, t));
                 }
             }
-            return points[points.Count - 1];
+            return points[^1];
         }
 
-        private void CalculateCurve(List<Vector3> points, HVRNPSChain chain, IEnumerable<HVRNPSBeacon> beacons)
+        private void CalculateCurve(List<(Vector3, float)> points, HVRNPSChain chain, IEnumerable<HVRNPSBeacon> beacons)
         {
             var currentPos = chain.transform.position;
             var currentDir = chain.transform.forward;
             var k = 0;
             HVRNPSBeacon lastBeacon = null;
+            
+            float nextConstriction = 1f;
             foreach (var beacon in beacons)
             {
                 var nextPos = beacon.CalculateCenter(girthRadius);
                 var nextDir = -beacon.transform.forward;
                 NPSMath.PrepareSeilerInterpolation(currentPos, nextPos, currentDir, nextDir, out var b0, out var b3, out var s1, out var s2);
                 var prev = NPSMath.SeilerInterpolate(b0, b3, s1, s2, 0f);
-                points.Add(b0);
+                points.Add((b0, nextConstriction));
                 
                 var color = k == 0 ? Color.cyan : Color.green;
                 for (var f = 0.1f; f < 1f; f += 0.1f)
                 {
                     var pos = NPSMath.SeilerInterpolate(b0, b3, s1, s2, f);
-                    points.Add(pos);
+                    points.Add((pos, nextConstriction));
                     Debug.DrawLine(prev, pos, color, 0.01f);
                     prev = pos;
                 }
-                points.Add(b3);
+                points.Add((b3, nextConstriction));
                 Debug.DrawLine(prev, b3, color, 0.01f);
                 
                 currentPos = nextPos;
                 currentDir = -nextDir;
                 k++;
                 lastBeacon = beacon;
+                nextConstriction = beacon.constriction == HVRNPSConstriction.ConstrictToHide ? 0f : nextConstriction;
             }
 
             if (lastBeacon != null)
             {
                 var lastPos = lastBeacon.CalculateCenter(girthRadius);
-                points.Add(lastPos + lastBeacon.transform.forward * 10);
+                
+                // TODO: The maximum length should be changed to something more sensible.
+                for (var f = 0.1f; f <= 10f; f += 0.1f)
+                {
+                    points.Add((lastPos + lastBeacon.transform.forward * f, nextConstriction));
+                }
                 
                 var color = k == 0 ? Color.cyan : Color.green;
                 color.a = 0.5f;
@@ -235,7 +253,7 @@ namespace HVR.NPS
             if (!Application.isPlaying)
             {
                 SortBeacons();
-                CalculateCurve(new List<Vector3>(), this, _sortedBeacons);
+                CalculateCurve(new List<(Vector3, float)>(), this, _sortedBeacons);
             }
         }
 

@@ -7,6 +7,7 @@ namespace HVR.NPS
     {
         public HVRNPSPassage passage;
         public HVRNPSAlignment alignment;
+        public HVRNPSConstriction constriction;
 
         private void OnEnable()
         {
@@ -45,5 +46,11 @@ namespace HVR.NPS
 
         // The finder will move along the up vector, away by its radius.
         Edge
+    }
+
+    public enum HVRNPSConstriction
+    {
+        NoChange,
+        ConstrictToHide,
     }
 }

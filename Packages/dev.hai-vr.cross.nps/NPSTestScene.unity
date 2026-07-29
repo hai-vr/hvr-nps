@@ -311,6 +311,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: HVR.NPS.Runtime::HVRNPSBeacon
   passage: 1
   alignment: 1
+  constriction: 0
 --- !u!1 &604014053
 GameObject:
   m_ObjectHideFlags: 0
@@ -407,6 +408,7 @@ MonoBehaviour:
   finder: {fileID: 927798422}
   elements:
   - {fileID: 1828525050}
+  - {fileID: 1828525051}
   - {fileID: 1828525049}
   - {fileID: 1828525048}
   - {fileID: 1828525047}
@@ -415,6 +417,7 @@ MonoBehaviour:
   - {fileID: 1828525044}
   girthRadius: 1.1
   tipLength: 1
+  immobileRoot: 1
   beacons:
   - {fileID: 542810358}
   - {fileID: 2100172699}
@@ -569,7 +572,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1828525044}
+  m_Father: {fileID: 1828525043}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1828525042
 PrefabInstance:
@@ -634,7 +637,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: -6686393211413471929, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1657991912}
     m_AddedComponents: []
@@ -646,37 +649,42 @@ Transform:
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1828525044 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: -6686393211413471929, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
+  m_CorrespondingSourceObject: {fileID: 3378871962647921511, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
   m_PrefabInstance: {fileID: 1828525042}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1828525045 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: -7294313822798784991, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
+  m_CorrespondingSourceObject: {fileID: -5852917449447256457, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
   m_PrefabInstance: {fileID: 1828525042}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1828525046 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 5487167983193351238, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
+  m_CorrespondingSourceObject: {fileID: 3110991402303036580, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
   m_PrefabInstance: {fileID: 1828525042}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1828525047 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 3407823592347662575, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
+  m_CorrespondingSourceObject: {fileID: 6430394640551551827, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
   m_PrefabInstance: {fileID: 1828525042}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1828525048 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 2695317227016914917, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
+  m_CorrespondingSourceObject: {fileID: -5637795981693253324, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
   m_PrefabInstance: {fileID: 1828525042}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1828525049 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: -2773932723507906726, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
+  m_CorrespondingSourceObject: {fileID: -2329849738973147579, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
   m_PrefabInstance: {fileID: 1828525042}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1828525050 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5746564759562468899, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
+  m_PrefabInstance: {fileID: 1828525042}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1828525051 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5877839645600356081, guid: 0c264e1a9391d19478effebd84a9341c, type: 3}
   m_PrefabInstance: {fileID: 1828525042}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &2019897432
@@ -852,6 +860,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: HVR.NPS.Runtime::HVRNPSBeacon
   passage: 0
   alignment: 0
+  constriction: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
