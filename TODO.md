@@ -15,7 +15,7 @@ Algorithm:
 - ⬜ Handle uniform scaling of the system.
 
 Homing:
-- ⬜ Lerp out of beacons that are too far.
+- 🟨 Lerp out of beacons that are too far.
 - ⬜ Ignore some beacons that are behind the forward vector.
 - ✅ Implement HVRNPSDirectionality to allow entrance in specific directions.
 
@@ -24,6 +24,7 @@ JiggleRig integration:
   so that the bone chain can be partially affected past a certain bone.
   - Preleminary testing shows that the portion of the bones that are meant to be static are lagging behind, so we may need
     some tighter control over how JiggleRig applies the bone configuration on the bones that are supposed to be static.
+- ⬜ Alternatively, consider just implementing a specialized Jiggle system ourselves.
 
 Vixxy integration:
 - ⬜ Figure out how a NPS Chain may communicate its signed distance as a measurement to the beacon.

@@ -127,6 +127,12 @@ namespace HVR.NPS
 
             var points = new List<NPSPoint>();
             CalculateCurve(points, this, inputBeacons);
+            
+            var firstPosition = inputBeacons[0].CalculateCenter(girthRadius);
+            var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
+            var TODO_FALLOFF = 2f;
+            var TODO_MARGIN = 1f;
+            var curveApplies01 = Mathf.InverseLerp(_totalLength + TODO_MARGIN + TODO_FALLOFF, _totalLength + TODO_MARGIN, distanceToFirstPosition);
 
             if (points.Count < 2) return;
 
@@ -153,6 +159,12 @@ namespace HVR.NPS
                 
                 element.position = pos.position;
                 element.rotation = Quaternion.LookRotation(forward, transform.up) * _reorient;
+
+                if (curveApplies01 < 1f)
+                {
+                    element.localPosition = Vector3.Lerp(segment.position, element.localPosition, curveApplies01);
+                    element.localRotation = Quaternion.Lerp(segment.rotation, element.localRotation, curveApplies01);
+                }
                 
                 var constriction = pos.constriction;
                 element.localScale = new Vector3(constriction, 1f, constriction);
