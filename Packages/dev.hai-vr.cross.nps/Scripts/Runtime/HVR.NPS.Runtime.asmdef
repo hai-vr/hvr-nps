@@ -2,10 +2,6 @@
     "name": "HVR.NPS.Runtime",
     "rootNamespace": "",
     "references": [
-        "Unity.Mathematics",
-        "Unity.Animation.Rigging",
-        "Unity.Burst",
-        "Unity.Collections",
         "Unity.Addressables",
         "Unity.ResourceManager"
     ],

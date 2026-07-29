@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
 
@@ -66,7 +65,7 @@ namespace HVR.NPS
         }
 
         public HVRNPSBeacon[] beacons;
-        private quaternion _reorient;
+        private Quaternion _reorient;
         
         private List<HVRNPSBeacon> _sortedBeacons = new();
 
@@ -120,7 +119,7 @@ namespace HVR.NPS
                 distances[i] = distances[i - 1] + Vector3.Distance(points[i - 1], points[i]);
             }
 
-            _reorient = NPSMath.FromToOrientation(math.forward(), math.right(), math.up(), math.forward());
+            _reorient = NPSMath.FromToOrientation(Vector3.forward, Vector3.right, Vector3.up, Vector3.forward);
         
             var currentDist = 0f;
             for (var i = 0; i < elements.Length; i++)

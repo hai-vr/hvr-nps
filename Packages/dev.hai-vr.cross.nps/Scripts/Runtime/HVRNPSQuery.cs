@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -146,14 +145,14 @@ namespace HVR.NPS
                 _resultsData = new uint[totalResults];
             }
 
-            var beaconPositions = new float3[beaconCount];
+            var beaconPositions = new Vector3[beaconCount];
             for (var i = 0; i < beaconCount; i++)
             {
                 beaconPositions[i] = _beacons[i].transform.position;
             }
             _beaconPositionsBuffer.SetData(beaconPositions);
 
-            var finderPositions = new float3[finderCount];
+            var finderPositions = new Vector3[finderCount];
             var finderRangesSq = new float[finderCount];
             for (var i = 0; i < finderCount; i++)
             {
