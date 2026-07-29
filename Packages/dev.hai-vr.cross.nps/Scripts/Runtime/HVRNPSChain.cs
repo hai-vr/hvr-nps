@@ -10,7 +10,7 @@ namespace HVR.NPS
         public HVRNPSFinder finder;
 
         public Transform[] elements;
-        private Segment[] _memory;
+        private NPSSegment[] _memory;
         
         public float girthRadius = 0.5f;
         public float tipLength = 0.1f;
@@ -20,14 +20,14 @@ namespace HVR.NPS
         {
             if (_memory == null)
             {
-                _memory = new Segment[elements.Length];
+                _memory = new NPSSegment[elements.Length];
                 for (var i = 0; i < elements.Length; i++)
                 {
                     var segmentLength = i < elements.Length - 1
                         ? (elements[i + 1].position - elements[i].position).magnitude
                         : tipLength;
                     
-                    _memory[i] = new Segment
+                    _memory[i] = new NPSSegment
                     {
                         transform = elements[i],
                         position = elements[i].localPosition,
@@ -108,7 +108,7 @@ namespace HVR.NPS
             // - Those points restrict two freedoms from the rotation. Calculate the rolls.
             // - Apply the changes in rotation.
 
-            var points = new List<(Vector3, float)>();
+            var points = new List<NPSPoint>();
             CalculateCurve(points, this, inputBeacons);
 
             if (points.Count < 2) return;
@@ -117,7 +117,7 @@ namespace HVR.NPS
             distances.Add(0);
             for (var i = 1; i < points.Count; i++)
             {
-                distances.Add(distances[i - 1] + Vector3.Distance(points[i - 1].Item1, points[i].Item1));
+                distances.Add(distances[i - 1] + Vector3.Distance(points[i - 1].position, points[i].position));
             }
 
             _reorient = NPSMath.FromToOrientation(Vector3.forward, Vector3.right, Vector3.up, Vector3.forward);
@@ -131,7 +131,7 @@ namespace HVR.NPS
                 var pos = SampleCurve(points, distances, currentDist);
                 var nextPos = SampleCurve(points, distances, currentDist + segment.segmentLength);
                 
-                var forward = (nextPos.Item1 - pos.Item1).normalized;
+                var forward = (nextPos.position - pos.position).normalized;
                 if (forward == Vector3.zero) forward = transform.up;
                 
                 if (immobileRoot && i == 0)
@@ -143,14 +143,14 @@ namespace HVR.NPS
                     element.rotation = Quaternion.LookRotation(forward, transform.up) * _reorient;
                 }
                 
-                var constriction = pos.Item2;
+                var constriction = pos.constriction;
                 element.localScale = new Vector3(constriction, 1f, constriction);
                 
                 currentDist += segment.segmentLength;
             }
         }
 
-        private (Vector3, float) SampleCurve(List<(Vector3, float)> points, List<float> distances, float distance)
+        private NPSPoint SampleCurve(List<NPSPoint> points, List<float> distances, float distance)
         {
             if (distance <= 0) return points[0];
             if (distance >= distances[^1]) return points[^1];
@@ -160,13 +160,13 @@ namespace HVR.NPS
                 if (distance >= distances[i] && distance <= distances[i + 1])
                 {
                     var t = (distance - distances[i]) / (distances[i + 1] - distances[i]);
-                    return (Vector3.Lerp(points[i].Item1, points[i + 1].Item1, t), Mathf.Lerp(points[i].Item2, points[i + 1].Item2, t));
+                    return new NPSPoint(Vector3.Lerp(points[i].position, points[i + 1].position, t), Mathf.Lerp(points[i].constriction, points[i + 1].constriction, t));
                 }
             }
             return points[^1];
         }
 
-        private void CalculateCurve(List<(Vector3, float)> points, HVRNPSChain chain, IEnumerable<HVRNPSBeacon> beacons)
+        private void CalculateCurve(List<NPSPoint> points, HVRNPSChain chain, IEnumerable<HVRNPSBeacon> beacons)
         {
             var currentPos = chain.transform.position;
             var currentDir = chain.transform.forward;
@@ -180,17 +180,17 @@ namespace HVR.NPS
                 var nextDir = -beacon.transform.forward;
                 NPSMath.PrepareSeilerInterpolation(currentPos, nextPos, currentDir, nextDir, out var b0, out var b3, out var s1, out var s2);
                 var prev = NPSMath.SeilerInterpolate(b0, b3, s1, s2, 0f);
-                points.Add((b0, nextConstriction));
+                points.Add(new NPSPoint(b0, nextConstriction));
                 
                 var color = k == 0 ? Color.cyan : Color.green;
                 for (var f = 0.1f; f < 1f; f += 0.1f)
                 {
                     var pos = NPSMath.SeilerInterpolate(b0, b3, s1, s2, f);
-                    points.Add((pos, nextConstriction));
+                    points.Add(new NPSPoint(pos, nextConstriction));
                     Debug.DrawLine(prev, pos, color, 0.01f);
                     prev = pos;
                 }
-                points.Add((b3, nextConstriction));
+                points.Add(new NPSPoint(b3, nextConstriction));
                 Debug.DrawLine(prev, b3, color, 0.01f);
                 
                 currentPos = nextPos;
@@ -207,7 +207,7 @@ namespace HVR.NPS
                 // TODO: The maximum length should be changed to something more sensible.
                 for (var f = 0.1f; f <= 10f; f += 0.1f)
                 {
-                    points.Add((lastPos + lastBeacon.transform.forward * f, nextConstriction));
+                    points.Add(new NPSPoint(lastPos + lastBeacon.transform.forward * f, nextConstriction));
                 }
                 
                 var color = k == 0 ? Color.cyan : Color.green;
@@ -253,11 +253,11 @@ namespace HVR.NPS
             if (!Application.isPlaying)
             {
                 SortBeacons();
-                CalculateCurve(new List<(Vector3, float)>(), this, _sortedBeacons);
+                CalculateCurve(new List<NPSPoint>(), this, _sortedBeacons);
             }
         }
 
-        private struct Segment
+        private struct NPSSegment
         {
             public Transform transform;
             public Vector3 position;
@@ -270,6 +270,18 @@ namespace HVR.NPS
                 transform.localPosition = position;
                 transform.localRotation = rotation;
                 transform.localScale = scale;
+            }
+        }
+        
+        private struct NPSPoint
+        {
+            public Vector3 position;
+            public float constriction;
+
+            public NPSPoint(Vector3 position, float constriction)
+            {
+                this.position = position;
+                this.constriction = constriction;
             }
         }
     }
