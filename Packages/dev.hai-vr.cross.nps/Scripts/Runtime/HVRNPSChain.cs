@@ -16,10 +16,17 @@ namespace HVR.NPS
         public float girthRadius = 0.5f;
         public float tipLength = 0.1f;
 
+        private float _totalLength;
+        public HVRNPSBeacon[] beacons;
+        private Quaternion _reorient;
+        
+        private List<HVRNPSBeacon> _sortedBeacons = new();
+
         private void OnEnable()
         {
             if (_memory == null)
             {
+                _totalLength = 0;
                 _memory = new NPSSegment[elements.Length];
                 for (var i = 0; i < elements.Length; i++)
                 {
@@ -35,6 +42,7 @@ namespace HVR.NPS
                         scale = elements[i].localScale,
                         segmentLength = segmentLength
                     };
+                    _totalLength += segmentLength;
                 }
             }
 
@@ -64,11 +72,6 @@ namespace HVR.NPS
         {
             beacons = inBeacons.ToArray();
         }
-
-        public HVRNPSBeacon[] beacons;
-        private Quaternion _reorient;
-        
-        private List<HVRNPSBeacon> _sortedBeacons = new();
 
         private void Update()
         {
@@ -214,17 +217,14 @@ namespace HVR.NPS
 
             if (lastBeacon != null)
             {
-                var lastPos = lastBeacon.CalculateCenter(girthRadius);
-                
-                // TODO: The maximum length should be changed to something more sensible.
-                for (var f = 0.1f; f <= 10f; f += 0.1f)
+                for (var f = 0.1f; f <= _totalLength * 2; f += 0.1f)
                 {
-                    points.Add(new NPSPoint(lastPos + lastBeacon.transform.forward * f, nextConstriction));
+                    points.Add(new NPSPoint(currentPos + currentDir * f, nextConstriction));
                 }
                 
                 var color = k == 0 ? Color.cyan : Color.green;
                 color.a = 0.5f;
-                Debug.DrawLine(lastPos, lastPos + lastBeacon.transform.forward * 2f, color, 0.01f);
+                Debug.DrawLine(currentPos, currentPos + currentDir * (_totalLength * 0.5f), color, 0.01f);
             }
         }
 
