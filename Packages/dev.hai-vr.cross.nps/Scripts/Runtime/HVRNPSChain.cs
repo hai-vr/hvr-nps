@@ -23,19 +23,19 @@ namespace HVR.NPS
     public class HVRNPSChain : MonoBehaviour
     {
         public HVRNPSFinder finder;
-
+        
         public Transform[] elements;
         public Transform[] idleProxies;
-        private NPSSegment[] _memory;
         
         public float girthRadius = 0.5f;
         public float tipLength = 0.1f;
 
-        private float _totalLength;
         public HVRNPSBeacon[] beacons;
         private Quaternion _reorient;
         
-        private List<HVRNPSBeacon> _sortedBeacons = new();
+        private readonly List<HVRNPSBeacon> _sortedBeacons = new();
+        private NPSSegment[] _memory;
+        private float _totalLength;
         private float _curveApplies01;
 
         private void OnEnable()
