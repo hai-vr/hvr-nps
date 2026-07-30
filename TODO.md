@@ -25,6 +25,11 @@ Homing:
 Query:
 - ⬜ Finder radius should be computed in local space to account for avatar scale.
 
+Girth:
+- ⬜ Encode the girth by distance to account for variable girth
+  - ⬜ Figure out if we need two girth radius encoded, one for determining the center of passage, and one for use as animation information.
+- ⬜ Have the beacon side receive information about the girth of chains that are passing through them.
+
 JiggleRig integration:
 - ✅ Lerp between an actual JiggleRig and our transforms when the beacon is too far.
 - ⬜ Consider controlling the stiffness of the JiggleRig up to an intermediate beacon, if it is outside a termination beacon,
