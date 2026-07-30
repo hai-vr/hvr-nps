@@ -83,5 +83,24 @@ namespace HVR.NPS
         {
             return (Vector3.Cross(Vector3.Cross(onAxis, toStraighten), onAxis)).normalized * toStraighten.magnitude;
         }
+        
+        /// Imported from HVR IK.
+        public static Vector3 ReprojectTwistToArm(Vector3 armDirection, Vector3 handDirection, Vector3 handTwist)
+        {
+            armDirection = armDirection.normalized;
+            handDirection = handDirection.normalized;
+            if (Vector3.Dot(armDirection, handDirection) >= 0.9999f)
+            {
+                // axis could have become NaN if this check were not in place.
+                return handTwist;
+            }
+            
+            var axis = Vector3.Cross(armDirection, handDirection).normalized;
+            
+            var axisArmCross = Vector3.Cross(axis, armDirection).normalized;
+            var axisHandCross = Vector3.Cross(axis, handDirection).normalized;
+            
+            return axis * Vector3.Dot(handTwist, axis) + axisArmCross * Vector3.Dot(handTwist, axisHandCross);
+        }
     }
 }

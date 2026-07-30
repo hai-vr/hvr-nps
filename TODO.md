@@ -11,7 +11,7 @@ Algorithm:
 - ⬜ Decide whether or not to measure the length from the spline and then moving the bone (which is what we're currently doing),
   or to strictly use the segment length. The spline may contain local maximas, so the second approach might not easily converge to a solution.
 - ⬜ Decide how to handle the spline control points (p1 and p2).
-- ⬜ Handle the bone roll.
+- ✅ Handle the bone roll.
 - ⬜ Handle uniform scaling of the system.
 
 Homing:
@@ -21,7 +21,7 @@ Homing:
 - ⬜ When two terminations are close to each other, prioritize the one that has the most sensible direction in relation to the chain.
 
 JiggleRig integration:
-- 🟨 Lerp between an actual JiggleRig and our transforms when the beacon is too far.
+- ✅ Lerp between an actual JiggleRig and our transforms when the beacon is too far.
 - ⬜ Consider controlling the stiffness of the JiggleRig up to an intermediate beacon, if it is outside a termination beacon,
   so that the bone chain can be partially affected past a certain bone.
   - Preleminary testing shows that the portion of the bones that are meant to be static are lagging behind, so we may need

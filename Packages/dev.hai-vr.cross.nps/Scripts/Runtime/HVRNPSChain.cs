@@ -164,6 +164,8 @@ namespace HVR.NPS
             _reorient = NPSMath.FromToOrientation(Vector3.forward, Vector3.right, Vector3.up, Vector3.forward);
         
             var currentDist = 0f;
+            var lastForward = Vector3.zero;
+            var lastUpVector = transform.up;
             for (var i = 0; i < elements.Length; i++)
             {
                 var element = elements[i];
@@ -177,11 +179,16 @@ namespace HVR.NPS
                 
                 var constriction = pos.constriction;
                 
+                if (i != 0)
+                {
+                    lastUpVector = NPSMath.ReprojectTwistToArm(forward, lastForward, lastUpVector);
+                }
+                
                 // Order matters in this version of the code.
                 // This is because curveApplies01 makes use of the local position deduced from applying this world space position.
                 element.SetPositionAndRotation(
                     pos.position,
-                    Quaternion.LookRotation(forward, transform.up) * _reorient
+                    Quaternion.LookRotation(forward, lastUpVector) * _reorient
                 );
 
                 var localScaleToApply = Vector3.Scale(segment.scale, new Vector3(constriction, 1f, constriction));
@@ -210,6 +217,7 @@ namespace HVR.NPS
                 }
                 
                 currentDist += segment.segmentLength;
+                lastForward = forward;
             }
         }
 
