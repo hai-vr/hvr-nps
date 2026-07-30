@@ -19,7 +19,7 @@ using UnityEngine;
 namespace HVR.NPS
 {
     [AddComponentMenu("HVR/NPS/HVR NPS Beacon")]
-    public class HVRNPSBeacon : MonoBehaviour, IHVRBeacon
+    public class HVRNPSBeacon : MonoBehaviour
     {
         public HVRNPSPassage passage;
         public HVRNPSAlignment alignment;
@@ -28,24 +28,22 @@ namespace HVR.NPS
 
         public HVRNPSBeacon[] next = Array.Empty<HVRNPSBeacon>();
         
-        public Transform AsTransform => transform;
-        
-        private bool _registered;
+        private HVRQueryBeacon _beacon;
 
         private void OnEnable()
         {
             if (passage != HVRNPSPassage.Internal)
             {
-                _registered = true;
-                HVRQuery.Instance.Register(this);
+                _beacon ??= new HVRQueryBeacon(this);
+                HVRQuery.Instance.Register(_beacon);
             }
         }
         
         private void OnDisable()
         {
-            if (_registered)
+            if (_beacon != null)
             {
-                HVRQuery.Instance.Unregister(this);
+                HVRQuery.Instance.Unregister(_beacon);
             }
         }
 

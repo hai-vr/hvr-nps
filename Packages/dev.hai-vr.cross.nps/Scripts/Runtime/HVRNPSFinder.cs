@@ -20,32 +20,31 @@ using UnityEngine;
 namespace HVR.NPS
 {
     [AddComponentMenu("HVR/NPS/HVR NPS Finder")]
-    public class HVRNPSFinder : MonoBehaviour, IHVRFinder
+    public class HVRNPSFinder : MonoBehaviour
     {
         public event BeaconsChanged OnBeaconsChanged;
         public delegate void BeaconsChanged(HVRNPSFinder finder, List<HVRNPSBeacon> beacons);
         
         public float range = 1f;
 
-        public Transform AsTransform => transform;
-        public float Range => range;
-        
         private readonly List<HVRNPSBeacon> _beacons = new();
-        
+        private HVRQueryFinder _finder;
+
         public void OnEnable()
         {
-            HVRQuery.Instance.Register(this, WhenBeaconEnterOrExit);
+            _finder ??= new HVRQueryFinder(this, range, WhenBeaconEnterOrExit);
+            HVRQuery.Instance.Register(_finder);
         }
         
         public void OnDisable()
         {
-            HVRQuery.Instance.Unregister(this);
+            HVRQuery.Instance.Unregister(_finder);
             OnBeaconsChanged?.Invoke(this, new List<HVRNPSBeacon>());
         }
 
-        private void WhenBeaconEnterOrExit(IHVRBeacon iBeacon, bool isEntering)
+        private void WhenBeaconEnterOrExit(HVRQueryBeacon iBeacon, bool isEntering)
         {
-            if (iBeacon is not HVRNPSBeacon beacon) return;
+            if (iBeacon.Component is not HVRNPSBeacon beacon) return;
             
             Debug.Log($"Beacon {beacon.name} is {(isEntering ? "entering" : "exiting")} range");
             
