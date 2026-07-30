@@ -53,6 +53,7 @@ The **HVR NPS Beacon** component represents a position that is being broadcast.
 It has the following properties:
 - **Passage**:
   - *Termination*: This is an end point. Beacons that are found at a further distance to this beacon will not be used.
+    - This does not mean that the mesh will be hidden beyond this point; that would be the role of *Constriction*, explained below.
   - *Intermediate*: This a point of passage, possibly leading to another beacon further away.
   - *Internal*: This a point that cannot be found by a finder, to be used in the *Next* array of beacons.
 - **Alignment**:
@@ -63,7 +64,7 @@ It has the following properties:
   - *No Change*: The chain does not change appearance past this point.
   - *Constrict To Hide*: The chain constricts past this point, in order to hide that chain.
 - **Directionality**:
-  - *Default*: If the passage is a *Termination*, then this is the same as *OneWay*. Otherwise, it is the same as *TwoWay*.
+  - *Default*: If the passage is a *Termination*, then this is the same as *One Way*. Otherwise, it is the same as *Two Way*.
   - *Two Way*: The passage can be used in both the Forward and the Backward directions of the beacon transform. 
   - *One Way*: The passage can be used in the Forward direction of the beacon transform.
   - *Reverse Way*: The passage can be used in the Backward direction of the beacon transform. This value is intended to be used by scripts, so that rotating the transform is not necessary.
