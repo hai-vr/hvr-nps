@@ -12,6 +12,7 @@ Algorithm:
   or to strictly use the segment length. The spline may contain local maximas, so the second approach might not easily converge to a solution.
 - ⬜ Decide how to handle the spline control points (p1 and p2).
 - ✅ Handle the bone roll.
+- ⬜ Fix the bone roll twisting 180 degrees when the homing point is at an abnormal angle. The twist propagation strategy should be more graceful to prevent this.
 - ⬜ Handle uniform scaling of the system.
 
 Homing:
