@@ -20,6 +20,10 @@ Homing:
 - ⬜ Ignore some beacons that are behind the forward vector.
 - ✅ Implement HVRNPSDirectionality to allow entrance in specific directions.
 - ⬜ When two terminations are close to each other, prioritize the one that has the most sensible direction in relation to the chain.
+- ⬜ Remove the public Beacons array from the chain.
+
+Query:
+- ⬜ Finder radius should be computed in local space to account for avatar scale.
 
 JiggleRig integration:
 - ✅ Lerp between an actual JiggleRig and our transforms when the beacon is too far.

@@ -24,3 +24,49 @@ By exploring a native implementation, we hope that:
 - Users may be able attach objects to the transforms such as particle systems,
 - Mixing behaviour with bone jiggle systems would be done via script,
 - Creation of custom behaviour may be possible via script modification rather than shader modification.
+
+## Current setup
+
+### HVR NPS Chain
+
+The **HVR NPS Chain** component represents a chain of bones that will attempt to pass through beacons found by its *HVR NPS Finder* component.
+
+It has the following properties:
+- **Finder**: The **HVR NPS Finder** which is used to find the beacons that this chain will attempt to pass through.
+- **Elements**: The elements of the chain which will be rotated. Do **not** include the root bone, as the root bone generally should not be rotated.
+- **Idle Proxies**: An alternate chain that is a copy of the same bones as those in *Elements*, but that alternate chain can be referenced by a jiggle bone system such as *JiggleRig*.
+- **Girth Radius**: The girth radius of the mesh of this chain, or in other words, around half of its thickness.
+- **Tip Length**: The extra length beyond the last item defined in *Elements* that still covers the mesh.
+- **Beacons**: Used for debugging, this will be removed.
+
+### HVR NPS Finder
+
+The **HVR NPS Finder** component represents an entity that is looking for beacons around its radius.
+
+It has the following properties:
+- **Radius**: The radius to look for beacons. The actual radius is computed in local space to account for a change in avatar scale.
+
+### HVR NPS Beacon
+
+The **HVR NPS Beacon** component represents a position that is being broadcast.
+
+It has the following properties:
+- **Passage**:
+  - *Termination*: This is an end point. Beacons that are found at a further distance to this beacon will not be used.
+  - *Intermediate*: This a point of passage, possibly leading to another beacon further away.
+  - *Internal*: This a point that cannot be found by a finder, to be used in the *Next* array of beacons.
+- **Alignment**:
+  - *Center*: This beacon is positioned at the center. Chains would go through the center.
+  - *Edge*: This beacon is position at an edge. Chains would go through a point located away from the edge in the Up direction
+    of the beacon transform, using the girth radius of the chain.
+- **Constriction**:
+  - *No Change*: The chain does not change appearance past this point.
+  - *Constrict To Hide*: The chain constricts past this point, in order to hide that chain.
+- **Directionality**:
+  - *Default*: If the passage is a *Termination*, then this is the same as *OneWay*. Otherwise, it is the same as *TwoWay*.
+  - *Two Way*: The passage can be used in both the Forward and the Backward directions of the beacon transform. 
+  - *One Way*: The passage can be used in the Forward direction of the beacon transform.
+  - *Reverse Way*: The passage can be used in the Backward direction of the beacon transform. This value is intended to be used by scripts, so that rotating the transform is not necessary.
+  - *Along Normal Plane*: The passage can be used in any direction planar to the Up direction of the beacon transform. This is used to represent a flat surface.
+- **Next**: An array of zero, one, or several *HVR NPS Beacon* components, ideally of type *Internal*. Any chain that passes through the beacon
+  of this component will also try to pass through these beacons in the order defined by the array.
