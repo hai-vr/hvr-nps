@@ -51,3 +51,22 @@ Basis Framework integration 🔺:
 - ⬜ Split the Query to its own module, if necessary.
 - ⬜ Expose Query to Cilbox.
 - ⬜ Try running HVRNPSChain entirely inside Cilbox.
+
+-----
+
+## Cilbox integration
+
+NPS is executed on the CPU, so this raises the question of scripting.
+
+There's at least two approaches to build this:
+- A) The application owner installs NPS in its entirety in the application, where only NPS can talk to NPS.
+- B) The application owner installs only the communication or heavier parts of NPS in the application, where Cilbox can talk to it.
+  The chain logic would be done almost entirely within Cilbox.
+
+The approach A has the advantage of being performant and without conflict, but the users cannot modify NPS to improve
+its function unless the application itself is modified. That said, those improvements would not require reuploading the avatar (or non-avatar).
+
+The approach B has the advantage of letting the users improve the implementation of NPS for each avatar (or non-avatar) upload,
+independently of the pace of the application, at a possible cost of performance.
+
+I like both approaches, and I'd like to enable both approaches.
