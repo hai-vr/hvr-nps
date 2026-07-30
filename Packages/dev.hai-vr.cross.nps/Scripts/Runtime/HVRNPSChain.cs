@@ -36,6 +36,7 @@ namespace HVR.NPS
         private Quaternion _reorient;
         
         private List<HVRNPSBeacon> _sortedBeacons = new();
+        private float _curveApplies01;
 
         private void OnEnable()
         {
@@ -146,9 +147,9 @@ namespace HVR.NPS
             var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
             var TODO_FALLOFF = 2f;
             var TODO_MARGIN = 1f;
-            var curveApplies01 = Mathf.InverseLerp(_totalLength + TODO_MARGIN + TODO_FALLOFF, _totalLength + TODO_MARGIN, distanceToFirstPosition);
+            _curveApplies01 = Mathf.InverseLerp(_totalLength + TODO_MARGIN + TODO_FALLOFF, _totalLength + TODO_MARGIN, distanceToFirstPosition);
 
-            if (curveApplies01 == 0f)
+            if (_curveApplies01 == 0f)
             {
                 FullyApplyIdle();
                 return;
@@ -192,24 +193,24 @@ namespace HVR.NPS
                 );
 
                 var localScaleToApply = Vector3.Scale(segment.scale, new Vector3(constriction, 1f, constriction));
-                if (curveApplies01 < 1f)
+                if (_curveApplies01 < 1f)
                 {
                     if (idleProxies.Length == elements.Length)
                     {
                         var idleProxy = idleProxies[i];
                         element.SetPositionAndRotation(
-                            Vector3.Lerp(idleProxy.position, element.position, curveApplies01),
-                            Quaternion.Lerp(idleProxy.rotation, element.rotation, curveApplies01)
+                            Vector3.Lerp(idleProxy.position, element.position, _curveApplies01),
+                            Quaternion.Lerp(idleProxy.rotation, element.rotation, _curveApplies01)
                         );
                     }
                     else
                     {
                         element.SetLocalPositionAndRotation(
-                            Vector3.Lerp(segment.position, element.localPosition, curveApplies01),
-                            Quaternion.Lerp(segment.rotation, element.localRotation, curveApplies01)
+                            Vector3.Lerp(segment.position, element.localPosition, _curveApplies01),
+                            Quaternion.Lerp(segment.rotation, element.localRotation, _curveApplies01)
                         );
                     }
-                    element.localScale = Vector3.Lerp(segment.scale, localScaleToApply, curveApplies01);
+                    element.localScale = Vector3.Lerp(segment.scale, localScaleToApply, _curveApplies01);
                 }
                 else
                 {
@@ -346,10 +347,19 @@ namespace HVR.NPS
                 Handles.color = Color.yellow;
                 Handles.DrawWireDisc(tipPos, tipNormal, girthRadius);
             
-                for (int i = 0; i < elements.Length; i++)
+                for (var i = 0; i < elements.Length; i++)
                 {
                     Handles.color = i % 2 == 0 ? Color.red : Color.yellow;
                     Handles.DrawLine(elements[i].position, i == elements.Length - 1 ? tipPos : elements[i + 1].position);
+                }
+
+                if (Application.isPlaying && idleProxies.Length > 0 && _curveApplies01 < 1f && _curveApplies01 > 0f)
+                {
+                    for (var i = 0; i < idleProxies.Length - 1; i++)
+                    {
+                        Handles.color = i % 2 == 0 ? Color.red : Color.yellow;
+                        Handles.DrawLine(idleProxies[i].position, idleProxies[i + 1].position);
+                    }
                 }
             }
             
