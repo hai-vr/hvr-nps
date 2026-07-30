@@ -23,10 +23,12 @@ namespace HVR.Query
     public sealed class HVRQueryBeacon
     {
         private readonly Component _component;
+        private readonly Dictionary<string, object> _scriptingData;
         
-        public HVRQueryBeacon(Component component)
+        public HVRQueryBeacon(Component component, Dictionary<string, object> scriptingData)
         {
             _component = component;
+            _scriptingData = scriptingData;
         }
         
         public Component Component => _component;
@@ -38,16 +40,19 @@ namespace HVR.Query
         private readonly Component _component;
         private readonly float _range;
         private readonly HVRQuery.BeaconEnterOrExit _whenBeaconEnterOrExit;
+        private readonly Dictionary<string, object> _scriptingData;
 
-        public HVRQueryFinder(Component component, float range, HVRQuery.BeaconEnterOrExit whenBeaconEnterOrExit)
+        public HVRQueryFinder(Component component, float range, HVRQuery.BeaconEnterOrExit whenBeaconEnterOrExit, Dictionary<string, object> scriptingData)
         {
             _component = component;
             _range = range;
             _whenBeaconEnterOrExit = whenBeaconEnterOrExit;
+            _scriptingData = scriptingData;
         }
         
         public Component Component => _component;
         public Transform AsTransform => _component.transform;
+        public Dictionary<string, object> scriptingData => _scriptingData;
         public float Range => _range;
         public HVRQuery.BeaconEnterOrExit WhenBeaconEnterOrExit => _whenBeaconEnterOrExit;
     }
@@ -106,23 +111,27 @@ namespace HVR.Query
         
         public void Register(HVRQueryBeacon beacon)
         {
-            if (!_beacons.Contains(beacon)) _beacons.Add(beacon);
+            if (!_beacons.Contains(beacon))
+            {
+                _beacons.Add(beacon);
+                Debug.Log($"Registering beacon {beacon.Component.name}.");
+            }
         }
 
         public void Unregister(HVRQueryBeacon beacon)
         {
-            _beacons.Remove(beacon);
+            if (_beacons.Remove(beacon))
+            {
+                Debug.Log($"Unregistered beacon {beacon.Component.name}.");
+            }
         }
 
         public void Unregister(HVRQueryFinder finder)
         {
-            if (_finderToBeaconsDict.TryGetValue(finder, out var finderToBeacons))
+            if (_finderKeys.Remove(finder))
             {
-                _tempBeacons.Clear();
-                _tempBeacons.AddRange(finderToBeacons);
+                Debug.Log($"Unregistered finder {finder.Component.name}.");
             }
-
-            _finderKeys.Remove(finder);
             _finderToBeaconsDict.Remove(finder);
         }
 
@@ -132,6 +141,7 @@ namespace HVR.Query
             {
                 _finderKeys.Add(finder);
                 _finderToBeaconsDict[finder] = new HashSet<HVRQueryBeacon>();
+                Debug.Log($"Registered finder {finder.Component.name}.");
             }
         }
 
@@ -236,8 +246,6 @@ namespace HVR.Query
             _isComputeScheduled = false;
             _isDataReady = false;
         }
-
-        private readonly List<HVRQueryBeacon> _tempBeacons = new();
 
         private void ProcessResults()
         {

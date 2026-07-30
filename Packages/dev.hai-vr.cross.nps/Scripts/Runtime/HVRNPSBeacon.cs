@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using HVR.Query;
 using UnityEngine;
 
@@ -34,7 +35,14 @@ namespace HVR.NPS
         {
             if (passage != HVRNPSPassage.Internal)
             {
-                _beacon ??= new HVRQueryBeacon(this);
+                _beacon ??= new HVRQueryBeacon(this, new Dictionary<string, object>
+                {
+                    { "duckType", "HVR.NPS.HVRNPSBeacon" },
+                    { "passage", (int)passage },
+                    { "alignment", (int)alignment },
+                    { "constriction", (int)constriction },
+                    { "directionality", (int)directionality },
+                });
                 HVRQuery.Instance.Register(_beacon);
             }
         }

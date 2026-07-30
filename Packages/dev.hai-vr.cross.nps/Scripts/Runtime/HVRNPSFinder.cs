@@ -32,7 +32,7 @@ namespace HVR.NPS
 
         public void OnEnable()
         {
-            _finder ??= new HVRQueryFinder(this, range, WhenBeaconEnterOrExit);
+            _finder ??= new HVRQueryFinder(this, range, WhenBeaconEnterOrExit, new Dictionary<string, object>());
             HVRQuery.Instance.Register(_finder);
         }
         

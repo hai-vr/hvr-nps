@@ -19,23 +19,36 @@ using UnityEngine;
 namespace HVR.NPS.CilboxVariants
 {
     [Cilboxable]
-    [AddComponentMenu("HVR/NPS/Cilbox/HVR NPS Beacon (Cilbox)")]
-    public class HVRNPSBeaconCilbox : MonoBehaviour
+    [AddComponentMenu("HVR/NPS/Cilbox/HVR NPS Finder (Cilbox)")]
+    public class HVRNPSFinderCilbox : MonoBehaviour
     {
-        private HVRQueryBeacon _beacon;
+        public float range = 1f;
+        
+        private HVRQueryFinder _beacon;
         
         private void OnEnable()
         {
-            _beacon ??= new HVRQueryBeacon(this, new Dictionary<string, object>());
+            if (_beacon == null)
+            {
+                _beacon = new HVRQueryFinder(this, range, WhenBeaconEnterOrExit, new Dictionary<string, object>());
+            }
+            
             HVRQuery.Instance.Register(_beacon);
+            Debug.Log($"Enabled Cilbox HVRNPSFinder");
         }
-        
+
         private void OnDisable()
         {
             if (_beacon != null) // In case we triggered an issue with Cilbox where OnEnable doesn't get triggered.
             {
                 HVRQuery.Instance.Unregister(_beacon);
+                Debug.Log($"Disabled Cilbox HVRNPSFinder");
             }
+        }
+
+        private void WhenBeaconEnterOrExit(HVRQueryBeacon beacon, bool isEntering)
+        {
+            Debug.Log($"CILBOX Beacon {beacon.Component.name}: {isEntering}");
         }
     }
 }
