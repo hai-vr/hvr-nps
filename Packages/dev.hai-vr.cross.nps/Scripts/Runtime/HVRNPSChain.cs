@@ -182,7 +182,19 @@ namespace HVR.NPS
                 
                 if (i != 0)
                 {
-                    lastUpVector = NPSMath.ReprojectTwistToArm(forward, lastForward, lastUpVector);
+                    var similarityToForward = Vector3.Dot(transform.forward, forward);
+                    var similatiryToBack = -similarityToForward;
+                    var similarityToUp = Vector3.Dot(transform.up, forward);
+                    var similarityToDown = -similarityToUp;
+
+                    var sequentialLerp = NPSMath.ReprojectTwistToArm(forward, lastForward, lastUpVector); // Lowest priority, for left and right directions (since it's unclear whether it's right-hand direction, or right-hand direction while upside down).
+                    sequentialLerp = Vector3.Lerp(sequentialLerp, transform.forward, Mathf.Clamp01(similarityToDown));
+                    sequentialLerp = Vector3.Lerp(sequentialLerp, -transform.forward, Mathf.Clamp01(similarityToUp));
+                    sequentialLerp = Vector3.Lerp(sequentialLerp, -transform.up, Mathf.Clamp01(similatiryToBack)); // <-- It might be possible to remove this one, so that it uses the same as ReprojectToTwist too? Not sure
+                    sequentialLerp = Vector3.Lerp(sequentialLerp, transform.up, Mathf.Clamp01(similarityToForward)); // Highest priority, for forward direction.
+                    sequentialLerp = sequentialLerp.normalized;
+                    
+                    lastUpVector = sequentialLerp;
                 }
                 
                 // Order matters in this version of the code.
