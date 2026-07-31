@@ -35,7 +35,7 @@ namespace HVR.NPS.CilboxVariants
             if (_beacon == null)
             {
                 // ReSharper disable once UseArrayEmptyMethod
-                _beacon = new HVRQueryFinder(this, range, WhenBeaconEnterOrExit, new object[0]);
+                _beacon = new HVRQueryFinder(this, range, WhenBeaconEnterOrExit);
             }
             
             HVRQuery.Instance.Register(_beacon);
@@ -60,18 +60,16 @@ namespace HVR.NPS.CilboxVariants
 
             if (isEntering)
             {
-                var scriptingData = beacon.ScriptingData;
-                if (scriptingData != null
-                    && TryGetScriptingValue(scriptingData, "duckType", out var duckType)
+                if (beacon.TryGetScriptValue("duckType", out var duckType)
                     && duckType is string stringDuckType
                     && stringDuckType == "HVR.NPS.HVRNPSBeacon")
                 {
                     var newVirtualBeacon = new HVRNPSVirtualBeaconCilbox
                     {
-                        passage = (int)GetScriptingValue(scriptingData, "passage"),
-                        alignment = (int)GetScriptingValue(scriptingData, "alignment"),
-                        constriction = (int)GetScriptingValue(scriptingData, "constriction"),
-                        directionality = (int)GetScriptingValue(scriptingData, "directionality")
+                        passage = (int)beacon.GetScriptValue("passage"),
+                        alignment = (int)beacon.GetScriptValue("alignment"),
+                        constriction = (int)beacon.GetScriptValue("constriction"),
+                        directionality = (int)beacon.GetScriptValue("directionality")
                     };
                     _queryBeaconToVirtualBeacon.Add(beacon, newVirtualBeacon);
 

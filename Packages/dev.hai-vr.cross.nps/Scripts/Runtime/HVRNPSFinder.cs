@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using HVR.Query;
 using UnityEditor;
@@ -33,7 +32,7 @@ namespace HVR.NPS
 
         public void OnEnable()
         {
-            _finder ??= new HVRQueryFinder(this, range, WhenBeaconEnterOrExit, Array.Empty<object>());
+            _finder ??= new HVRQueryFinder(this, range, WhenBeaconEnterOrExit);
             HVRQuery.Instance.Register(_finder);
         }
         

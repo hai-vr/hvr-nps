@@ -23,17 +23,19 @@ namespace HVR.Query
     public sealed class HVRQueryBeacon
     {
         private readonly Component _component;
-        private readonly object[] _scriptingData;
+        private readonly Dictionary<string, object> _scriptingData = new();
         
-        public HVRQueryBeacon(Component component, object[] scriptingData)
+        public HVRQueryBeacon(Component component)
         {
             _component = component;
-            _scriptingData = scriptingData;
         }
+
+        public void InitializeScriptValue(string key, object value) { _scriptingData.TryAdd(key, value); }
+        public bool TryGetScriptValue(string key, out object value) { return _scriptingData.TryGetValue(key, out value); }
+        public object GetScriptValue(string key) { return _scriptingData[key]; }
         
         public Component Component => _component;
         public Transform AsTransform => _component.transform;
-        public object[] ScriptingData => _scriptingData;
     }
 
     public sealed class HVRQueryFinder
@@ -41,19 +43,16 @@ namespace HVR.Query
         private readonly Component _component;
         private readonly float _range;
         private readonly HVRQuery.BeaconEnterOrExit _whenBeaconEnterOrExit;
-        private readonly object[] _scriptingData;
 
-        public HVRQueryFinder(Component component, float range, HVRQuery.BeaconEnterOrExit whenBeaconEnterOrExit, object[] scriptingData)
+        public HVRQueryFinder(Component component, float range, HVRQuery.BeaconEnterOrExit whenBeaconEnterOrExit)
         {
             _component = component;
             _range = range;
             _whenBeaconEnterOrExit = whenBeaconEnterOrExit;
-            _scriptingData = scriptingData;
         }
         
         public Component Component => _component;
         public Transform AsTransform => _component.transform;
-        public object[] ScriptingData => _scriptingData;
         public float Range => _range;
         public HVRQuery.BeaconEnterOrExit WhenBeaconEnterOrExit => _whenBeaconEnterOrExit;
     }
