@@ -14,15 +14,14 @@
 
 using System.Collections.Generic;
 using HVR.Query;
-using UnityEditor;
 using UnityEngine;
 
-namespace HVR.NPS
+namespace HVR.NPS.CilboxVariants
 {
-    [AddComponentMenu("HVR/NPS/HVR NPS Chain")]
-    public class HVRNPSChain : MonoBehaviour
+    [AddComponentMenu("HVR/NPS/HVR NPS Chain (Cilbox)")]
+    public class HVRNPSChainCilbox : MonoBehaviour
     {
-        public HVRNPSFinder finder;
+        public HVRNPSFinderCilbox finder;
         
         public Transform[] elements;
         public Transform[] idleProxies;
@@ -30,9 +29,10 @@ namespace HVR.NPS
         public float girthRadius = 0.5f;
         public float tipLength = 0.1f;
 
-        public HVRNPSBeacon[] beacons;
+        public HVRNPSVirtualBeaconCilbox[] beacons;
+        private Quaternion _reorient;
         
-        private readonly List<HVRNPSBeacon> _sortedBeacons = new();
+        private readonly List<HVRNPSVirtualBeaconCilbox> _sortedBeacons = new();
         private NPSSegment[] _memory;
         private float _totalLength;
         private float _curveApplies01;
@@ -45,21 +45,17 @@ namespace HVR.NPS
                 _memory = new NPSSegment[elements.Length];
                 for (var i = 0; i < elements.Length; i++)
                 {
-                    var element = elements[i];
                     var segmentLength = i < elements.Length - 1
-                        ? (elements[i + 1].position - element.position).magnitude
+                        ? (elements[i + 1].position - elements[i].position).magnitude
                         : tipLength;
-
-                    var standardToModel = Quaternion.Inverse(element.rotation) * transform.rotation;
+                    
                     _memory[i] = new NPSSegment
                     {
-                        transform = element,
-                        position = element.localPosition,
-                        rotation = element.localRotation,
-                        scale = element.localScale,
-                        segmentLength = segmentLength,
-                        modelToStandard = standardToModel,
-                        standardToModel = Quaternion.Inverse(standardToModel),
+                        transform = elements[i],
+                        position = elements[i].localPosition,
+                        rotation = elements[i].localRotation,
+                        scale = elements[i].localScale,
+                        segmentLength = segmentLength
                     };
                     _totalLength += segmentLength;
                 }
@@ -87,7 +83,7 @@ namespace HVR.NPS
             }
         }
 
-        private void WhenBeaconsChanged(HVRNPSFinder finder, List<HVRNPSBeacon> inBeacons)
+        private void WhenBeaconsChanged(HVRNPSFinderCilbox finder, List<HVRNPSVirtualBeaconCilbox> inBeacons)
         {
             beacons = inBeacons.ToArray();
         }
@@ -105,11 +101,11 @@ namespace HVR.NPS
             _sortedBeacons.AddRange(beacons);
             
             var rootPosition = transform.position;
-            _sortedBeacons.Sort((a, b) => (a.CalculateCenter(girthRadius) - rootPosition).magnitude.CompareTo((b.CalculateCenter(girthRadius) - rootPosition).magnitude));
+            _sortedBeacons.Sort((a, b) => (CalculateCenter(a) - rootPosition).magnitude.CompareTo((CalculateCenter(b) - rootPosition).magnitude));
             for (var index = 0; index < _sortedBeacons.Count -1; index++)
             {
-                HVRNPSBeacon sortedBeacon = _sortedBeacons[index];
-                if (sortedBeacon.passage == HVRNPSPassage.Termination)
+                HVRNPSVirtualBeaconCilbox sortedBeacon = _sortedBeacons[index];
+                if (sortedBeacon.passage == (int)HVRNPSPassage.Termination)
                 {
                     _sortedBeacons.RemoveRange(index + 1, _sortedBeacons.Count - index - 1);
                     break;
@@ -117,12 +113,21 @@ namespace HVR.NPS
             }
         }
 
+        private Vector3 CalculateCenter(HVRNPSVirtualBeaconCilbox beacon)
+        {
+            return beacon.alignment switch
+            {
+                (int)HVRNPSAlignment.Edge => transform.position + transform.up * girthRadius,
+                _ => transform.position
+            };
+        }
+
         private void OnDestroy()
         {
             HVRQuery.Instance.Dispose();
         }
 
-        public void DeformElements(List<HVRNPSBeacon> inputBeacons)
+        public void DeformElements(List<HVRNPSVirtualBeaconCilbox> inputBeacons)
         {
             if (inputBeacons.Count == 0)
             {
@@ -146,7 +151,7 @@ namespace HVR.NPS
                 return;
             }
             
-            var firstPosition = inputBeacons[0].CalculateCenter(girthRadius);
+            var firstPosition = CalculateCenter(inputBeacons[0]);
             var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
             var TODO_FALLOFF = 2f;
             var TODO_MARGIN = 1f;
@@ -165,6 +170,8 @@ namespace HVR.NPS
                 distances.Add(distances[i - 1] + Vector3.Distance(points[i - 1].position, points[i].position));
             }
 
+            _reorient = NPSMath.FromToOrientation(Vector3.forward, Vector3.right, Vector3.up, Vector3.forward);
+        
             var currentDist = 0f;
             var lastForward = Vector3.zero;
             var lastUpVector = transform.up;
@@ -202,7 +209,7 @@ namespace HVR.NPS
                 // This is because curveApplies01 makes use of the local position deduced from applying this world space position.
                 element.SetPositionAndRotation(
                     pos.position,
-                    Quaternion.LookRotation(forward, lastUpVector) * segment.standardToModel
+                    Quaternion.LookRotation(forward, lastUpVector) * _reorient
                 );
 
                 var localScaleToApply = Vector3.Scale(segment.scale, new Vector3(constriction, 1f, constriction));
@@ -270,7 +277,7 @@ namespace HVR.NPS
             return points[^1];
         }
 
-        private void CalculateCurve(List<NPSPoint> points, List<HVRNPSBeacon> beacons)
+        private void CalculateCurve(List<NPSPoint> points, List<HVRNPSVirtualBeaconCilbox> beacons)
         {
             var currentPos = transform.position;
             var currentDir = transform.forward;
@@ -327,7 +334,7 @@ namespace HVR.NPS
                         currentDir = -nextDir;
                         k++;
                         lastBeacon = beacon;
-                        nextConstriction = beacon.ActualConstriction() == HVRNPSConstriction.ConstrictToHide ? 0f : nextConstriction;
+                        nextConstriction = beacon.constriction == HVRNPSConstriction.ConstrictToHide ? 0f : nextConstriction;
                     }
                 }
             }
@@ -347,77 +354,6 @@ namespace HVR.NPS
             }
         }
 
-        private void OnDrawGizmos()
-        {
-            {
-                var rootPos = elements[0].position;
-                var lastPos = elements[^1].position;
-                var tipNormal = (elements[^1].rotation * _memory[^1].modelToStandard)  * Vector3.forward;
-                var tipPos = lastPos + tipNormal * tipLength;
-                var normal = rootPos - lastPos;
-                Handles.color = Color.red;
-                Handles.DrawWireDisc(rootPos, normal, girthRadius);
-                Handles.color = Color.yellow;
-                Handles.DrawWireDisc(tipPos, tipNormal, girthRadius);
-            
-                for (var i = 0; i < elements.Length; i++)
-                {
-                    Handles.color = i % 2 == 0 ? Color.red : Color.yellow;
-                    Handles.DrawLine(elements[i].position, i == elements.Length - 1 ? tipPos : elements[i + 1].position);
-                }
-
-                if (Application.isPlaying && idleProxies.Length > 0 && _curveApplies01 < 1f && _curveApplies01 > 0f)
-                {
-                    for (var i = 0; i < idleProxies.Length - 1; i++)
-                    {
-                        Handles.color = i % 2 == 0 ? Color.red : Color.yellow;
-                        Handles.DrawLine(idleProxies[i].position, idleProxies[i + 1].position);
-                    }
-                }
-            }
-            
-            foreach (var beacon in beacons)
-            {
-                if (beacon == null) continue;
-                
-                var beaconPos = beacon.CalculateCenter(girthRadius);
-                var rotation = beacon.transform.rotation;
-                var normal = rotation * Vector3.forward;
-
-                Handles.color = beacon.passage == HVRNPSPassage.Termination ? Color.red : Color.green;
-                
-                var actualDirectionality = beacon.ActualDirectionality();
-                if (actualDirectionality is HVRNPSDirectionality.OneWay or HVRNPSDirectionality.TwoWay)
-                {
-                    Handles.ArrowHandleCap(0, beaconPos, rotation, girthRadius, EventType.Repaint);
-                }
-                if (actualDirectionality is HVRNPSDirectionality.ReverseWay or HVRNPSDirectionality.TwoWay)
-                {
-                    Handles.ArrowHandleCap(0, beaconPos, rotation * Quaternion.Euler(0, 180, 0), girthRadius, EventType.Repaint);
-                }
-                if (actualDirectionality == HVRNPSDirectionality.AlongNormalPlane)
-                {
-                    var planeNormal = beacon.transform.up;
-                    for (var degrees = 0; degrees < 360; degrees += 45)
-                    {
-                        Handles.ArrowHandleCap(0, beaconPos, Quaternion.AngleAxis(degrees, planeNormal) * rotation, girthRadius, EventType.Repaint);
-                    }
-                    Handles.DrawLine(beacon.transform.position, beacon.transform.position + planeNormal * girthRadius * 2);
-                }
-                else
-                {
-                    Handles.DrawWireDisc(beaconPos, normal, girthRadius);
-                }
-                Handles.DrawWireDisc(beacon.transform.position, normal, girthRadius * 0.1f);
-            }
-
-            if (!Application.isPlaying)
-            {
-                SortBeacons();
-                // CalculateCurve(new List<NPSPoint>(), this, _sortedBeacons);
-            }
-        }
-
         private struct NPSSegment
         {
             public Transform transform;
@@ -425,8 +361,6 @@ namespace HVR.NPS
             public Quaternion rotation;
             public Vector3 scale;
             public float segmentLength;
-            public Quaternion modelToStandard;
-            public Quaternion standardToModel;
 
             public void Restore()
             {

@@ -22,11 +22,24 @@ namespace HVR.NPS.CilboxVariants
     [AddComponentMenu("HVR/NPS/Cilbox/HVR NPS Beacon (Cilbox)")]
     public class HVRNPSBeaconCilbox : MonoBehaviour
     {
+        public int passage;
+        public int alignment;
+        public int constriction;
+        public int directionality;
+        
         private HVRQueryBeacon _beacon;
         
         private void OnEnable()
         {
-            _beacon ??= new HVRQueryBeacon(this, new Dictionary<string, object>());
+            _beacon ??= new HVRQueryBeacon(this, new Dictionary<string, object>
+            {
+                { "duckType", "HVR.NPS.HVRNPSBeacon" },
+                { "version", 1 },
+                { "passage", passage },
+                { "alignment", alignment },
+                { "constriction", constriction },
+                { "directionality", directionality },
+            });
             HVRQuery.Instance.Register(_beacon);
         }
         

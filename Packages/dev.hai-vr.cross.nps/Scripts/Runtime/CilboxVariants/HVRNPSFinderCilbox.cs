@@ -22,10 +22,14 @@ namespace HVR.NPS.CilboxVariants
     [AddComponentMenu("HVR/NPS/Cilbox/HVR NPS Finder (Cilbox)")]
     public class HVRNPSFinderCilbox : MonoBehaviour
     {
+        public event BeaconsChangedCilbox OnBeaconsChanged;
+        public delegate void BeaconsChangedCilbox(HVRNPSFinderCilbox finder, List<HVRNPSVirtualBeaconCilbox> beacons);
+        
         public float range = 1f;
         
         private HVRQueryFinder _beacon;
-        
+        private readonly Dictionary<HVRQueryBeacon, HVRNPSVirtualBeaconCilbox> _queryBeaconToVirtualBeacon = new();
+
         private void OnEnable()
         {
             if (_beacon == null)
@@ -49,6 +53,43 @@ namespace HVR.NPS.CilboxVariants
         private void WhenBeaconEnterOrExit(HVRQueryBeacon beacon, bool isEntering)
         {
             Debug.Log($"CILBOX Beacon {beacon.Component.name}: {isEntering}");
+
+            if (!isEntering && !_queryBeaconToVirtualBeacon.ContainsKey(beacon)) return;
+            if (isEntering && _queryBeaconToVirtualBeacon.ContainsKey(beacon)) return;
+
+            if (isEntering)
+            {
+                var beaconScriptingData = beacon.ScriptingData;
+                if (beaconScriptingData != null
+                    && beaconScriptingData.TryGetValue("duckType", out var duckType)
+                    && duckType is string stringDuckType
+                    && stringDuckType == "HVR.NPS.HVRNPSBeacon")
+                {
+                    var newVirtualBeacon = new HVRNPSVirtualBeaconCilbox
+                    {
+                        passage = (int)beaconScriptingData["passage"],
+                        alignment = (int)beaconScriptingData["alignment"],
+                        constriction = (int)beaconScriptingData["constriction"],
+                        directionality = (int)beaconScriptingData["directionality"]
+                    };
+                    _queryBeaconToVirtualBeacon.Add(beacon, newVirtualBeacon);
+
+                    OnBeaconsChanged?.Invoke(this, new List<HVRNPSVirtualBeaconCilbox>(_queryBeaconToVirtualBeacon.Values));
+                }
+            }
+            else
+            {
+                _queryBeaconToVirtualBeacon.Remove(beacon);
+            }
         }
+    }
+
+    [Cilboxable]
+    public class HVRNPSVirtualBeaconCilbox
+    {
+        public int passage;
+        public int alignment;
+        public int constriction;
+        public int directionality;
     }
 }

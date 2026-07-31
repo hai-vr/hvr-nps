@@ -38,6 +38,7 @@ namespace HVR.NPS
                 _beacon ??= new HVRQueryBeacon(this, new Dictionary<string, object>
                 {
                     { "duckType", "HVR.NPS.HVRNPSBeacon" },
+                    { "version", 1 },
                     { "passage", (int)passage },
                     { "alignment", (int)alignment },
                     { "constriction", (int)constriction },

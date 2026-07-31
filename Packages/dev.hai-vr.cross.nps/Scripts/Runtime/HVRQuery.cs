@@ -33,6 +33,7 @@ namespace HVR.Query
         
         public Component Component => _component;
         public Transform AsTransform => _component.transform;
+        public Dictionary<string, object> ScriptingData => _scriptingData;
     }
 
     public sealed class HVRQueryFinder
@@ -52,7 +53,7 @@ namespace HVR.Query
         
         public Component Component => _component;
         public Transform AsTransform => _component.transform;
-        public Dictionary<string, object> scriptingData => _scriptingData;
+        public Dictionary<string, object> ScriptingData => _scriptingData;
         public float Range => _range;
         public HVRQuery.BeaconEnterOrExit WhenBeaconEnterOrExit => _whenBeaconEnterOrExit;
     }
