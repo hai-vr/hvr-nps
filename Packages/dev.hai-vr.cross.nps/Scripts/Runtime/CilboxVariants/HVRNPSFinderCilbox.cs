@@ -69,7 +69,8 @@ namespace HVR.NPS.CilboxVariants
                         passage = (int)beacon.GetScriptValue("passage"),
                         alignment = (int)beacon.GetScriptValue("alignment"),
                         constriction = (int)beacon.GetScriptValue("constriction"),
-                        directionality = (int)beacon.GetScriptValue("directionality")
+                        directionality = (int)beacon.GetScriptValue("directionality"),
+                        next = (HVRNPSVirtualBeaconCilbox[])beacon.GetScriptValue("next") // FIXME: 
                     };
                     _queryBeaconToVirtualBeacon.Add(beacon, newVirtualBeacon);
 
@@ -111,5 +112,6 @@ namespace HVR.NPS.CilboxVariants
         public int alignment;
         public int constriction;
         public int directionality;
+        public HVRNPSVirtualBeaconCilbox[] next;
     }
 }

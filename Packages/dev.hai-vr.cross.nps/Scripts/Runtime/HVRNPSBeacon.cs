@@ -42,6 +42,7 @@ namespace HVR.NPS
                 _beacon.InitializeScriptValue("alignment", alignment);
                 _beacon.InitializeScriptValue("constriction", constriction);
                 _beacon.InitializeScriptValue("directionality", directionality);
+                _beacon.InitializeScriptValue("next", next);
                 HVRQuery.Instance.Register(_beacon);
             }
         }

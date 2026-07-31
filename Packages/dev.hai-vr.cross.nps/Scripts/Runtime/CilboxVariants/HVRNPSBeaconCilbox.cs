@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
 using HVR.Query;
 using UnityEngine;
 
@@ -26,6 +25,8 @@ namespace HVR.NPS.CilboxVariants
         public int alignment;
         public int constriction;
         public int directionality;
+        // ReSharper disable once UseArrayEmptyMethod
+        public HVRNPSVirtualBeaconCilbox[] next = new HVRNPSVirtualBeaconCilbox[0];
         
         private HVRQueryBeacon _beacon;
         
@@ -38,6 +39,7 @@ namespace HVR.NPS.CilboxVariants
             _beacon.InitializeScriptValue("alignment", alignment);
             _beacon.InitializeScriptValue("constriction", constriction);
             _beacon.InitializeScriptValue("directionality", directionality);
+            _beacon.InitializeScriptValue("next", next);
             HVRQuery.Instance.Register(_beacon);
         }
         
