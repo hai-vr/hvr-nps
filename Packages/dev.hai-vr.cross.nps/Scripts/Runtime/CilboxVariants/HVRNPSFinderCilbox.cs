@@ -34,7 +34,8 @@ namespace HVR.NPS.CilboxVariants
         {
             if (_beacon == null)
             {
-                _beacon = new HVRQueryFinder(this, range, WhenBeaconEnterOrExit, new Dictionary<string, object>());
+                // ReSharper disable once UseArrayEmptyMethod
+                _beacon = new HVRQueryFinder(this, range, WhenBeaconEnterOrExit, new object[0]);
             }
             
             HVRQuery.Instance.Register(_beacon);
@@ -59,18 +60,18 @@ namespace HVR.NPS.CilboxVariants
 
             if (isEntering)
             {
-                var beaconScriptingData = beacon.ScriptingData;
-                if (beaconScriptingData != null
-                    && beaconScriptingData.TryGetValue("duckType", out var duckType)
+                var scriptingData = beacon.ScriptingData;
+                if (scriptingData != null
+                    && TryGetScriptingValue(scriptingData, "duckType", out var duckType)
                     && duckType is string stringDuckType
                     && stringDuckType == "HVR.NPS.HVRNPSBeacon")
                 {
                     var newVirtualBeacon = new HVRNPSVirtualBeaconCilbox
                     {
-                        passage = (int)beaconScriptingData["passage"],
-                        alignment = (int)beaconScriptingData["alignment"],
-                        constriction = (int)beaconScriptingData["constriction"],
-                        directionality = (int)beaconScriptingData["directionality"]
+                        passage = (int)GetScriptingValue(scriptingData, "passage"),
+                        alignment = (int)GetScriptingValue(scriptingData, "alignment"),
+                        constriction = (int)GetScriptingValue(scriptingData, "constriction"),
+                        directionality = (int)GetScriptingValue(scriptingData, "directionality")
                     };
                     _queryBeaconToVirtualBeacon.Add(beacon, newVirtualBeacon);
 
@@ -81,6 +82,27 @@ namespace HVR.NPS.CilboxVariants
             {
                 _queryBeaconToVirtualBeacon.Remove(beacon);
             }
+        }
+
+        public bool TryGetScriptingValue(object[] scriptingData, string key, out object value)
+        {
+            for (var i = 0; i < scriptingData.Length; i += 2)
+            {
+                if (scriptingData[i] is string stringKey && stringKey == key)
+                {
+                    value = scriptingData[i + 1];
+                    return true;
+                }
+            }
+
+            value = null;
+            return false;
+        }
+        
+        public object GetScriptingValue(object[] scriptingData, string key)
+        {
+            TryGetScriptingValue(scriptingData, key, out var value);
+            return value;
         }
     }
 

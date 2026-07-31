@@ -31,14 +31,13 @@ namespace HVR.NPS.CilboxVariants
         
         private void OnEnable()
         {
-            _beacon ??= new HVRQueryBeacon(this, new Dictionary<string, object>
-            {
-                { "duckType", "HVR.NPS.HVRNPSBeacon" },
-                { "version", 1 },
-                { "passage", passage },
-                { "alignment", alignment },
-                { "constriction", constriction },
-                { "directionality", directionality },
+            _beacon ??= new HVRQueryBeacon(this, new object[] {
+                "duckType", "HVR.NPS.HVRNPSBeacon",
+                "version", 1,
+                "passage", passage,
+                "alignment", alignment,
+                "constriction", constriction,
+                "directionality", directionality,
             });
             HVRQuery.Instance.Register(_beacon);
         }

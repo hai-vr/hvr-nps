@@ -23,9 +23,9 @@ namespace HVR.Query
     public sealed class HVRQueryBeacon
     {
         private readonly Component _component;
-        private readonly Dictionary<string, object> _scriptingData;
+        private readonly object[] _scriptingData;
         
-        public HVRQueryBeacon(Component component, Dictionary<string, object> scriptingData)
+        public HVRQueryBeacon(Component component, object[] scriptingData)
         {
             _component = component;
             _scriptingData = scriptingData;
@@ -33,7 +33,7 @@ namespace HVR.Query
         
         public Component Component => _component;
         public Transform AsTransform => _component.transform;
-        public Dictionary<string, object> ScriptingData => _scriptingData;
+        public object[] ScriptingData => _scriptingData;
     }
 
     public sealed class HVRQueryFinder
@@ -41,9 +41,9 @@ namespace HVR.Query
         private readonly Component _component;
         private readonly float _range;
         private readonly HVRQuery.BeaconEnterOrExit _whenBeaconEnterOrExit;
-        private readonly Dictionary<string, object> _scriptingData;
+        private readonly object[] _scriptingData;
 
-        public HVRQueryFinder(Component component, float range, HVRQuery.BeaconEnterOrExit whenBeaconEnterOrExit, Dictionary<string, object> scriptingData)
+        public HVRQueryFinder(Component component, float range, HVRQuery.BeaconEnterOrExit whenBeaconEnterOrExit, object[] scriptingData)
         {
             _component = component;
             _range = range;
@@ -53,7 +53,7 @@ namespace HVR.Query
         
         public Component Component => _component;
         public Transform AsTransform => _component.transform;
-        public Dictionary<string, object> ScriptingData => _scriptingData;
+        public object[] ScriptingData => _scriptingData;
         public float Range => _range;
         public HVRQuery.BeaconEnterOrExit WhenBeaconEnterOrExit => _whenBeaconEnterOrExit;
     }

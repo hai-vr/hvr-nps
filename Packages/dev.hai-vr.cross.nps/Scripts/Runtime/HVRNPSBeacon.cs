@@ -35,14 +35,13 @@ namespace HVR.NPS
         {
             if (passage != HVRNPSPassage.Internal)
             {
-                _beacon ??= new HVRQueryBeacon(this, new Dictionary<string, object>
-                {
-                    { "duckType", "HVR.NPS.HVRNPSBeacon" },
-                    { "version", 1 },
-                    { "passage", (int)passage },
-                    { "alignment", (int)alignment },
-                    { "constriction", (int)constriction },
-                    { "directionality", (int)directionality },
+                _beacon ??= new HVRQueryBeacon(this, new object[] {
+                    "duckType", "HVR.NPS.HVRNPSBeacon",
+                    "version", 1,
+                    "passage", passage,
+                    "alignment", alignment,
+                    "constriction", constriction,
+                    "directionality", directionality,
                 });
                 HVRQuery.Instance.Register(_beacon);
             }
