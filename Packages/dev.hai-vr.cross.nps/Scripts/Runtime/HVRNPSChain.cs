@@ -326,7 +326,7 @@ namespace HVR.NPS
                         currentDir = -nextDir;
                         k++;
                         lastBeacon = beacon;
-                        nextConstriction = beacon.constriction == HVRNPSConstriction.ConstrictToHide ? 0f : nextConstriction;
+                        nextConstriction = beacon.ActualConstriction() == HVRNPSConstriction.ConstrictToHide ? 0f : nextConstriction;
                     }
                 }
             }

@@ -58,6 +58,15 @@ namespace HVR.NPS
             };
         }
 
+        public HVRNPSConstriction ActualConstriction()
+        {
+            if (constriction != HVRNPSConstriction.Default) return constriction;
+            
+            return passage == HVRNPSPassage.Termination && next.Length == 0
+                ? HVRNPSConstriction.ConstrictToHide
+                : HVRNPSConstriction.NoChange;
+        }
+
         public HVRNPSDirectionality ActualDirectionality()
         {
             if (directionality != HVRNPSDirectionality.Default) return directionality;
@@ -91,6 +100,9 @@ namespace HVR.NPS
 
     public enum HVRNPSConstriction
     {
+        // ConstrictToHide if the passage is a Termination and that Termination has no next, No Change otherwise.
+        Default,
+        
         /// Entry does not constrict the mesh.
         NoChange,
         

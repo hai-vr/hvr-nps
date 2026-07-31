@@ -61,6 +61,7 @@ It has the following properties:
   - *Edge*: This beacon is position at an edge. Chains would go through a point located away from the edge in the Up direction
     of the beacon transform, using the girth radius of the chain.
 - **Constriction**:
+  - *Default*: If the passage is a *Termination* and *Next* is empty, then this is the same as *Constrict To Hide*. Otherwise, it is the same as *No Change*.
   - *No Change*: The chain does not change appearance past this point.
   - *Constrict To Hide*: The chain constricts past this point, in order to hide that chain.
 - **Directionality**:
