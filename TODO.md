@@ -6,7 +6,7 @@
 
 Algorithm:
 - ⬜ Pre-calculate the chain and the rolls separately from the applying the poses, just like how HVR IK does it.
-  - ⬜ Improve how we integrate the variety of transform rotations in 3D models.
+  - ✅ Improve how we integrate the variety of transform rotations in 3D models.
 - ⬜ Instead of pre-sampling the spline, use a bisection strategy using the segment lengths.
 - ⬜ Decide whether or not to measure the length from the spline and then moving the bone (which is what we're currently doing),
   or to strictly use the segment length. The spline may contain local maximas, so the second approach might not easily converge to a solution.
@@ -50,7 +50,7 @@ Application integration:
 Basis Framework integration 🔺:
 - ⬜ Split the Query to its own module, if necessary.
 - ⬜ Expose Query to Cilbox.
-- ⬜ Try running HVRNPSChain entirely inside Cilbox.
+- 🟨 Try running HVRNPSChain entirely inside Cilbox.
 
 -----
 
