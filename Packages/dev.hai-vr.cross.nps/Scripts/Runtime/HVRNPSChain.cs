@@ -31,7 +31,6 @@ namespace HVR.NPS
         public float tipLength = 0.1f;
 
         public HVRNPSBeacon[] beacons;
-        private Quaternion _reorient;
         
         private readonly List<HVRNPSBeacon> _sortedBeacons = new();
         private NPSSegment[] _memory;
@@ -46,17 +45,21 @@ namespace HVR.NPS
                 _memory = new NPSSegment[elements.Length];
                 for (var i = 0; i < elements.Length; i++)
                 {
+                    var element = elements[i];
                     var segmentLength = i < elements.Length - 1
-                        ? (elements[i + 1].position - elements[i].position).magnitude
+                        ? (elements[i + 1].position - element.position).magnitude
                         : tipLength;
-                    
+
+                    var standardToModel = Quaternion.Inverse(element.rotation) * transform.rotation;
                     _memory[i] = new NPSSegment
                     {
-                        transform = elements[i],
-                        position = elements[i].localPosition,
-                        rotation = elements[i].localRotation,
-                        scale = elements[i].localScale,
-                        segmentLength = segmentLength
+                        transform = element,
+                        position = element.localPosition,
+                        rotation = element.localRotation,
+                        scale = element.localScale,
+                        segmentLength = segmentLength,
+                        modelToStandard = standardToModel,
+                        standardToModel = Quaternion.Inverse(standardToModel),
                     };
                     _totalLength += segmentLength;
                 }
@@ -162,8 +165,6 @@ namespace HVR.NPS
                 distances.Add(distances[i - 1] + Vector3.Distance(points[i - 1].position, points[i].position));
             }
 
-            _reorient = NPSMath.FromToOrientation(Vector3.forward, Vector3.right, Vector3.up, Vector3.forward);
-        
             var currentDist = 0f;
             var lastForward = Vector3.zero;
             var lastUpVector = transform.up;
@@ -201,7 +202,7 @@ namespace HVR.NPS
                 // This is because curveApplies01 makes use of the local position deduced from applying this world space position.
                 element.SetPositionAndRotation(
                     pos.position,
-                    Quaternion.LookRotation(forward, lastUpVector) * _reorient
+                    Quaternion.LookRotation(forward, lastUpVector) * segment.standardToModel
                 );
 
                 var localScaleToApply = Vector3.Scale(segment.scale, new Vector3(constriction, 1f, constriction));
@@ -351,7 +352,7 @@ namespace HVR.NPS
             {
                 var rootPos = elements[0].position;
                 var lastPos = elements[^1].position;
-                var tipNormal = elements[^1].up.normalized;
+                var tipNormal = (elements[^1].rotation * _memory[^1].modelToStandard)  * Vector3.forward;
                 var tipPos = lastPos + tipNormal * tipLength;
                 var normal = rootPos - lastPos;
                 Handles.color = Color.red;
@@ -424,6 +425,8 @@ namespace HVR.NPS
             public Quaternion rotation;
             public Vector3 scale;
             public float segmentLength;
+            public Quaternion modelToStandard;
+            public Quaternion standardToModel;
 
             public void Restore()
             {
