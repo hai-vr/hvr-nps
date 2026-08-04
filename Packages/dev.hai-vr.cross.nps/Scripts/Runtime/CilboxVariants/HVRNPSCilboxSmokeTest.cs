@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if NPS_HAS_CILBOX
+using UnityEngine;
 
 namespace HVR.NPS
 {
@@ -11,3 +12,4 @@ namespace HVR.NPS
         }
     }
 }
+#endif

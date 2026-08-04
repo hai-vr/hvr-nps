@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NPS_HAS_CILBOX
 using System.Collections.Generic;
 using HVR.Query;
 using UnityEngine;
@@ -115,3 +116,4 @@ namespace HVR.NPS.CilboxVariants
         public HVRNPSVirtualBeaconCilbox[] next;
     }
 }
+#endif
