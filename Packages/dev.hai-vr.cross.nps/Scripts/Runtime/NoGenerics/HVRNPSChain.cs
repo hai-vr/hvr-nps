@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
 using HVR.Query;
 using UnityEditor;
 using UnityEngine;
@@ -30,12 +29,14 @@ namespace HVR.NPS
         public float girthRadius = 0.5f;
         public float tipLength = 0.1f;
 
-        public HVRNPSBeacon[] beacons;
+        private HVRNPSUnsortedBeaconCollection _beacons = new();
+        private readonly HVRNPSSortedBeaconArray _sortedBeacons = new();
         
-        private readonly List<HVRNPSBeacon> _sortedBeacons = new();
         private NPSSegment[] _memory;
         private float _totalLength;
         private float _curveApplies01;
+        private HVRNPSNPSBoganList points = new(300);
+        private HVRNPSNPSBoganList distances = new(300);
 
         private void OnEnable()
         {
@@ -87,34 +88,16 @@ namespace HVR.NPS
             }
         }
 
-        private void WhenBeaconsChanged(HVRNPSFinder finder, List<HVRNPSBeacon> inBeacons)
+        private void WhenBeaconsChanged(HVRNPSFinder finder, HVRNPSUnsortedBeaconCollection inputBeacons)
         {
-            beacons = inBeacons.ToArray();
+            _beacons = inputBeacons;
         }
 
         private void Update()
         {
             HVRQuery.Instance.TryUpdateBeaconPositions();
-            SortBeacons();
+            NPSCilboxHelper.SortBeacons(_beacons, _sortedBeacons, transform.position, girthRadius);
             DeformElements(_sortedBeacons);
-        }
-
-        private void SortBeacons()
-        {
-            _sortedBeacons.Clear();
-            _sortedBeacons.AddRange(beacons);
-            
-            var rootPosition = transform.position;
-            _sortedBeacons.Sort((a, b) => (a.CalculateCenter(girthRadius) - rootPosition).magnitude.CompareTo((b.CalculateCenter(girthRadius) - rootPosition).magnitude));
-            for (var index = 0; index < _sortedBeacons.Count -1; index++)
-            {
-                HVRNPSBeacon sortedBeacon = _sortedBeacons[index];
-                if (sortedBeacon.passage == HVRNPSPassage.Termination)
-                {
-                    _sortedBeacons.RemoveRange(index + 1, _sortedBeacons.Count - index - 1);
-                    break;
-                }
-            }
         }
 
         private void OnDestroy()
@@ -122,9 +105,9 @@ namespace HVR.NPS
             HVRQuery.Instance.Dispose();
         }
 
-        public void DeformElements(List<HVRNPSBeacon> inputBeacons)
+        public void DeformElements(HVRNPSSortedBeaconArray inputBeacons)
         {
-            if (inputBeacons.Count == 0)
+            if (inputBeacons.size == 0)
             {
                 FullyApplyIdle();
                 return;
@@ -136,17 +119,17 @@ namespace HVR.NPS
             // - Those points restrict two freedoms from the rotation. Calculate the rolls.
             // - Apply the changes in rotation.
 
-            var points = new List<NPSPoint>();
-            CalculateCurve(points, this, inputBeacons);
+            points.Clear();
+            CalculateCurve(points, inputBeacons);
             
             // I'm not sure when this can happen. This might be too defensive
-            if (points.Count < 2)
+            if (points.size < 2)
             {
                 FullyApplyIdle();
                 return;
             }
             
-            var firstPosition = inputBeacons[0].CalculateCenter(girthRadius);
+            var firstPosition = inputBeacons.beacons[0].CalculateCenter(girthRadius);
             var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
             var TODO_FALLOFF = 2f;
             var TODO_MARGIN = 1f;
@@ -158,11 +141,11 @@ namespace HVR.NPS
                 return;
             }
 
-            var distances = new List<float>();
-            distances.Add(0);
-            for (var i = 1; i < points.Count; i++)
+            distances.Clear();
+            distances.Add(0f);
+            for (var i = 1; i < points.size; i++)
             {
-                distances.Add(distances[i - 1] + Vector3.Distance(points[i - 1].position, points[i].position));
+                distances.Add((float)distances.items[i - 1] + Vector3.Distance(((NPSPoint)points.items[i - 1]).position, ((NPSPoint)points.items[i]).position));
             }
 
             var currentDist = 0f;
@@ -254,32 +237,33 @@ namespace HVR.NPS
             }
         }
 
-        private NPSPoint SampleCurve(List<NPSPoint> points, List<float> distances, float distance)
+        private NPSPoint SampleCurve(HVRNPSNPSBoganList points, HVRNPSNPSBoganList distances, float distance)
         {
-            if (distance <= 0) return points[0];
-            if (distance >= distances[^1]) return points[^1];
+            if (distance <= 0) return (NPSPoint)points.items[0];
+            if (distance >= (float)distances.LastItem()) return (NPSPoint)points.LastItem();
 
-            for (var i = 0; i < distances.Count - 1; i++)
+            for (var i = 0; i < distances.size - 1; i++)
             {
-                if (distance >= distances[i] && distance <= distances[i + 1])
+                if (distance >= (float)distances.items[i] && distance <= (float)distances.items[i + 1])
                 {
-                    var t = (distance - distances[i]) / (distances[i + 1] - distances[i]);
-                    return new NPSPoint(Vector3.Lerp(points[i].position, points[i + 1].position, t), Mathf.Lerp(points[i].constriction, points[i + 1].constriction, t));
+                    var t = (distance - (float)distances.items[i]) / ((float)distances.items[i + 1] - (float)distances.items[i]);
+                    return new NPSPoint(Vector3.Lerp(((NPSPoint)points.items[i]).position, ((NPSPoint)points.items[i + 1]).position, t), Mathf.Lerp(((NPSPoint)points.items[i]).constriction, ((NPSPoint)points.items[i + 1]).constriction, t));
                 }
             }
-            return points[^1];
+            return (NPSPoint)points.LastItem();
         }
 
-        private void CalculateCurve(List<NPSPoint> points, HVRNPSChain chain, List<HVRNPSBeacon> beacons)
+        private void CalculateCurve(HVRNPSNPSBoganList points, HVRNPSSortedBeaconArray beacons)
         {
-            var currentPos = chain.transform.position;
-            var currentDir = chain.transform.forward;
+            var currentPos = transform.position;
+            var currentDir = transform.forward;
             var k = 0;
             HVRNPSBeacon lastBeacon = null;
             
             float nextConstriction = 1f;
-            foreach (var mainBeacon in beacons)
+            for (var beaconIdx = 0; beaconIdx < beacons.size; beaconIdx++)
             {
+                var mainBeacon = beacons.beacons[beaconIdx];
                 for (var i = -1; i < mainBeacon.next.Length; i++)
                 {
                     var beacon = i == -1 ? mainBeacon : mainBeacon.next[i];
@@ -349,6 +333,9 @@ namespace HVR.NPS
 
         private void OnDrawGizmos()
         {
+            // TODO TEMP DISABLE DUE TO ERRORS WHEN MIGRATING TO CILBOX
+            if (!Application.isPlaying) return;
+            
             {
                 var rootPos = elements[0].position;
                 var lastPos = elements[^1].position;
@@ -376,8 +363,10 @@ namespace HVR.NPS
                 }
             }
             
-            foreach (var beacon in beacons)
+            for (var i = 0; i < _beacons.size; i++)
             {
+                var beacon = _beacons.beacons[i];
+                
                 if (beacon == null) continue;
                 
                 var beaconPos = beacon.CalculateCenter(girthRadius);
@@ -413,8 +402,7 @@ namespace HVR.NPS
 
             if (!Application.isPlaying)
             {
-                SortBeacons();
-                // CalculateCurve(new List<NPSPoint>(), this, _sortedBeacons);
+                NPSCilboxHelper.SortBeacons(_beacons, _sortedBeacons, transform.position, girthRadius);
             }
         }
 

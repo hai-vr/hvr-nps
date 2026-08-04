@@ -3,7 +3,8 @@
     "rootNamespace": "",
     "references": [
         "Unity.Addressables",
-        "Unity.ResourceManager"
+        "Unity.ResourceManager",
+        "Cilbox"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -12,6 +13,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.cnlohr.cilbox",
+            "expression": "",
+            "define": "NPS_HAS_CILBOX"
+        }
+    ],
     "noEngineReferences": false
 }

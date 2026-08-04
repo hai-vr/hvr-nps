@@ -12,40 +12,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using HVR.Query;
 using UnityEngine;
 
 namespace HVR.NPS
 {
     [AddComponentMenu("HVR/NPS/HVR NPS Beacon")]
-    public class HVRNPSBeacon : MonoBehaviour, IHVRBeacon
+    public class HVRNPSBeacon : MonoBehaviour
     {
         public HVRNPSPassage passage;
         public HVRNPSAlignment alignment;
         public HVRNPSConstriction constriction;
         public HVRNPSDirectionality directionality;
 
-        public HVRNPSBeacon[] next = Array.Empty<HVRNPSBeacon>();
+        public HVRNPSBeacon[] next = new HVRNPSBeacon[0];
         
-        public Transform AsTransform => transform;
-        
-        private bool _registered;
+        private HVRQueryBeacon _beacon;
 
         private void OnEnable()
         {
             if (passage != HVRNPSPassage.Internal)
             {
-                _registered = true;
-                HVRQuery.Instance.Register(this);
+                _beacon ??= new HVRQueryBeacon(this);
+                _beacon.InitializeScriptValue("duckType", "HVR.NPS.HVRNPSBeacon");
+                _beacon.InitializeScriptValue("version", 1);
+                _beacon.InitializeScriptValue("passage", passage);
+                _beacon.InitializeScriptValue("alignment", alignment);
+                _beacon.InitializeScriptValue("constriction", constriction);
+                _beacon.InitializeScriptValue("directionality", directionality);
+                _beacon.InitializeScriptValue("next", next);
+                HVRQuery.Instance.Register(_beacon);
             }
         }
         
         private void OnDisable()
         {
-            if (_registered)
+            if (_beacon != null)
             {
-                HVRQuery.Instance.Unregister(this);
+                HVRQuery.Instance.Unregister(_beacon);
             }
         }
 
