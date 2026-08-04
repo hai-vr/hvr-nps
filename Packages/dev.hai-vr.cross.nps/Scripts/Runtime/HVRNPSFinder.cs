@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
+using System;
 using HVR.Query;
 using UnityEditor;
 using UnityEngine;
@@ -23,11 +23,11 @@ namespace HVR.NPS
     public class HVRNPSFinder : MonoBehaviour
     {
         public event BeaconsChanged OnBeaconsChanged;
-        public delegate void BeaconsChanged(HVRNPSFinder finder, List<HVRNPSBeacon> beacons);
+        public delegate void BeaconsChanged(HVRNPSFinder finder, HVRNPSUnsortedBeaconCollection beacons);
         
         public float range = 1f;
 
-        private readonly List<HVRNPSBeacon> _beacons = new();
+        private readonly HVRNPSUnsortedBeaconCollection _beacons = new();
         private HVRQueryFinder _finder;
 
         public void OnEnable()
@@ -39,7 +39,7 @@ namespace HVR.NPS
         public void OnDisable()
         {
             HVRQuery.Instance.Unregister(_finder);
-            OnBeaconsChanged?.Invoke(this, new List<HVRNPSBeacon>());
+            OnBeaconsChanged?.Invoke(this, new HVRNPSUnsortedBeaconCollection());
         }
 
         private void WhenBeaconEnterOrExit(HVRQueryBeacon iBeacon, bool isEntering)
@@ -50,21 +50,22 @@ namespace HVR.NPS
             
             if (isEntering)
             {
-                if (!_beacons.Contains(beacon)) _beacons.Add(beacon);
+                _beacons.AddIfNotExists(beacon);
             }
             else
             {
                 _beacons.Remove(beacon);
             }
-            
+
             OnBeaconsChanged?.Invoke(this, _beacons);
         }
 
         private void OnDrawGizmosSelected()
         {
             Handles.color = Color.yellow;
-            foreach (var beacon in _beacons)
+            for (var i = 0; i < _beacons.size; i++)
             {
+                var beacon = _beacons.beacons[i];
                 Handles.DrawLine(transform.position, beacon.transform.position);
             }
         }

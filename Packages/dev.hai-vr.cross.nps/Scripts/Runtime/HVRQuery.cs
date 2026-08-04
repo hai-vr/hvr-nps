@@ -145,6 +145,9 @@ namespace HVR.Query
             }
         }
 
+        /// Request the Query to update itself and eventually emit events if necessary the next time this function is invoked.
+        /// It is safe to call this function from multiple different components on the same frame as there is a hard limit in place
+        /// (once every 0.1 seconds).
         public void TryUpdateBeaconPositions()
         {
             ScheduleUpdateBeaconPositions();

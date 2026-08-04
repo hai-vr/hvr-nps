@@ -13,7 +13,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using HVR.Query;
 using UnityEngine;
 
@@ -27,7 +26,7 @@ namespace HVR.NPS
         public HVRNPSConstriction constriction;
         public HVRNPSDirectionality directionality;
 
-        public HVRNPSBeacon[] next = Array.Empty<HVRNPSBeacon>();
+        public HVRNPSBeacon[] next = new HVRNPSBeacon[0];
         
         private HVRQueryBeacon _beacon;
 

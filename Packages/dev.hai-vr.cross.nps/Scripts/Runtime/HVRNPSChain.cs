@@ -30,9 +30,9 @@ namespace HVR.NPS
         public float girthRadius = 0.5f;
         public float tipLength = 0.1f;
 
-        public HVRNPSBeacon[] beacons;
+        public HVRNPSUnsortedBeaconCollection beacons;
         
-        private readonly List<HVRNPSBeacon> _sortedBeacons = new();
+        private readonly HVRNPSSortedBeaconArray _sortedBeacons = new();
         private NPSSegment[] _memory;
         private float _totalLength;
         private float _curveApplies01;
@@ -87,34 +87,16 @@ namespace HVR.NPS
             }
         }
 
-        private void WhenBeaconsChanged(HVRNPSFinder finder, List<HVRNPSBeacon> inBeacons)
+        private void WhenBeaconsChanged(HVRNPSFinder finder, HVRNPSUnsortedBeaconCollection inputBeacons)
         {
-            beacons = inBeacons.ToArray();
+            beacons = inputBeacons;
         }
 
         private void Update()
         {
             HVRQuery.Instance.TryUpdateBeaconPositions();
-            SortBeacons();
+            NPSCilboxHelper.SortBeacons(beacons, _sortedBeacons, transform.position, girthRadius);
             DeformElements(_sortedBeacons);
-        }
-
-        private void SortBeacons()
-        {
-            _sortedBeacons.Clear();
-            _sortedBeacons.AddRange(beacons);
-            
-            var rootPosition = transform.position;
-            _sortedBeacons.Sort((a, b) => (a.CalculateCenter(girthRadius) - rootPosition).magnitude.CompareTo((b.CalculateCenter(girthRadius) - rootPosition).magnitude));
-            for (var index = 0; index < _sortedBeacons.Count -1; index++)
-            {
-                HVRNPSBeacon sortedBeacon = _sortedBeacons[index];
-                if (sortedBeacon.passage == HVRNPSPassage.Termination)
-                {
-                    _sortedBeacons.RemoveRange(index + 1, _sortedBeacons.Count - index - 1);
-                    break;
-                }
-            }
         }
 
         private void OnDestroy()
@@ -122,9 +104,9 @@ namespace HVR.NPS
             HVRQuery.Instance.Dispose();
         }
 
-        public void DeformElements(List<HVRNPSBeacon> inputBeacons)
+        public void DeformElements(HVRNPSSortedBeaconArray inputBeacons)
         {
-            if (inputBeacons.Count == 0)
+            if (inputBeacons.size == 0)
             {
                 FullyApplyIdle();
                 return;
@@ -146,7 +128,7 @@ namespace HVR.NPS
                 return;
             }
             
-            var firstPosition = inputBeacons[0].CalculateCenter(girthRadius);
+            var firstPosition = inputBeacons.beacons[0].CalculateCenter(girthRadius);
             var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
             var TODO_FALLOFF = 2f;
             var TODO_MARGIN = 1f;
@@ -270,7 +252,7 @@ namespace HVR.NPS
             return points[^1];
         }
 
-        private void CalculateCurve(List<NPSPoint> points, List<HVRNPSBeacon> beacons)
+        private void CalculateCurve(List<NPSPoint> points, HVRNPSSortedBeaconArray beacons)
         {
             var currentPos = transform.position;
             var currentDir = transform.forward;
@@ -278,8 +260,9 @@ namespace HVR.NPS
             HVRNPSBeacon lastBeacon = null;
             
             float nextConstriction = 1f;
-            foreach (var mainBeacon in beacons)
+            for (var beaconIdx = 0; beaconIdx < beacons.size; beaconIdx++)
             {
+                var mainBeacon = beacons.beacons[beaconIdx];
                 for (var i = -1; i < mainBeacon.next.Length; i++)
                 {
                     var beacon = i == -1 ? mainBeacon : mainBeacon.next[i];
@@ -376,8 +359,10 @@ namespace HVR.NPS
                 }
             }
             
-            foreach (var beacon in beacons)
+            for (var i = 0; i < beacons.size; i++)
             {
+                var beacon = beacons.beacons[i];
+                
                 if (beacon == null) continue;
                 
                 var beaconPos = beacon.CalculateCenter(girthRadius);
@@ -413,8 +398,7 @@ namespace HVR.NPS
 
             if (!Application.isPlaying)
             {
-                SortBeacons();
-                // CalculateCurve(new List<NPSPoint>(), this, _sortedBeacons);
+                NPSCilboxHelper.SortBeacons(beacons, _sortedBeacons, transform.position, girthRadius);
             }
         }
 
