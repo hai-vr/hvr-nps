@@ -37,9 +37,14 @@ namespace HVR.NPS
         private float _curveApplies01;
         private HVRNPSNPSBoganList points = new(300);
         private HVRNPSNPSBoganList distances = new(300);
+        private bool _isIdle;
 
         private void OnEnable()
         {
+            // Even if the chain was idle when it became disabled, reset this flag,
+            // so that it will force apply the idle state when this gets enabled.
+            _isIdle = false;
+            
             if (_memory == null)
             {
                 _totalLength = 0;
@@ -141,6 +146,8 @@ namespace HVR.NPS
                 return;
             }
 
+            _isIdle = false;
+
             distances.Clear();
             distances.Add(0f);
             for (var i = 1; i < points.size; i++)
@@ -220,6 +227,9 @@ namespace HVR.NPS
 
         private void FullyApplyIdle()
         {
+            if (_isIdle) return;
+            _isIdle = true;
+            
             for (var i = 0; i < elements.Length; i++)
             {
                 var element = elements[i];
