@@ -27,9 +27,32 @@ By exploring a native implementation, we hope that:
 
 ## Current setup
 
+### Model requirements
+
+The model must be a Skinned Mesh, which armature contains at least one series of bones that are all perfectly lined up in any axis.
+
+Please make sure that the model transform, the Armature transform, and its bones all have a scale of 1, so the model needs to be
+exported properly.
+
+The orientation does not matter, and the direction system used by the bones do not matter.
+That said, for simplicity, I recommend the model to be placed horizontally rather than vertically, as it makes it more obvious
+what the upright direction is.
+
+The density of bones is up to experimentation.
+
+Note: Building a Unity Editor script that converts an existing model to this format should be quite easy, so an editor script may
+be made available at a later time.
+
 ### HVR NPS Chain
 
 The **HVR NPS Chain** component represents a chain of bones that will attempt to pass through beacons found by its *HVR NPS Finder* component.
+
+The position and orientation of the *HVR NPS Chain* determines how the chain behaves.
+- The forward direction (blue arrow) is the direction of the chain, from the root to the tip.
+- The up direction (green arrow) should "point up", relative to the forward direction. It is generally the same as the scene up direction,
+  when the model is set up horizontally.
+
+The *HVR NPS Chain* should be placed at the position of the root bone; not the position of the element at index 0.
 
 It has the following properties:
 - **Finder**: The **HVR NPS Finder** which is used to find the beacons that this chain will attempt to pass through.
