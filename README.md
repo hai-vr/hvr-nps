@@ -19,10 +19,10 @@ NPS attempts to implement a *(D)PS*-like system for use in environments where:
 - That positional information can be directly used by scripts to drive transforms and other object characteristics.
 
 By exploring a native implementation, we hope that:
-- There would not be a need for a build-time overhead induced by complex shaders,
-- Graphical artifacts normally caused by shaders would not happen, such as depth and shadow artifacts,
-- Users may be able attach objects to the transforms such as particle systems,
-- Mixing behaviour with bone jiggle systems would be done via script,
+- All URP shaders work without any patches nor build-time overhead,
+- Graphical artifacts normally caused by deformation shaders do not happen, such as depth and shadow artifacts,
+- Users can attach objects to the transforms such as particle systems,
+- Behaviour can be seamlessly mixed with bone jiggle systems,
 - Creation of custom behaviour may be possible via script modification rather than shader modification.
 
 ## Current setup

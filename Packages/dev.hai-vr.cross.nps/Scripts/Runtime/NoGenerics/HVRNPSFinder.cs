@@ -13,7 +13,9 @@
 // limitations under the License.
 
 using HVR.Query;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
 namespace HVR.NPS
@@ -59,6 +61,7 @@ namespace HVR.NPS
             OnBeaconsChanged?.Invoke(this, _beacons);
         }
 
+#if UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
             Handles.color = Color.yellow;
@@ -68,5 +71,6 @@ namespace HVR.NPS
                 Handles.DrawLine(transform.position, beacon.transform.position);
             }
         }
+#endif
     }
 }
