@@ -36,6 +36,7 @@ namespace HVR.NPS.ForCilbox
         private object[]/*cilbox::NPSCilSegment*/ _memory; public NPSCilSegment _MEMORY(int i) { return (NPSCilSegment)_memory[i]; }
         private float _totalLength;
         private float _curveApplies01;
+        private float _girthRadiusInWorldSpace;
         private NPSCilMath _NPSCilMath;
         private Vector3 __cil__rootPosition;
         private readonly List<float> _distances = new();
@@ -86,6 +87,7 @@ namespace HVR.NPS.ForCilbox
 
         private void Update()
         {
+            _girthRadiusInWorldSpace = girthRadius * transform.lossyScale.x;
             SortBeacons();
             DeformElements(_sortedBeacons);
         }
@@ -96,7 +98,7 @@ namespace HVR.NPS.ForCilbox
             _sortedBeacons.AddRange(beacons);
             
             __cil__rootPosition = transform.position;
-
+            
             _sortedBeacons.Sort(SortBeaconsCompareFn);
             for (var index = 0; index < _sortedBeacons.Count -1; index++)
             {
@@ -113,7 +115,7 @@ namespace HVR.NPS.ForCilbox
         {
             var a = (HVRNPSCilBeacon)a_cil;
             var b = (HVRNPSCilBeacon)b_cil;
-            return (a.CalculateCenter(girthRadius) - __cil__rootPosition).magnitude.CompareTo((b.CalculateCenter(girthRadius) - __cil__rootPosition).magnitude);
+            return (a.CalculateCenter(_girthRadiusInWorldSpace) - __cil__rootPosition).magnitude.CompareTo((b.CalculateCenter(_girthRadiusInWorldSpace) - __cil__rootPosition).magnitude);
         }
 
         public void DeformElements(List<object/*cilbox::HVRNPSCilBeacon*/> inputBeacons)
@@ -141,7 +143,7 @@ namespace HVR.NPS.ForCilbox
                 return;
             }
             
-            var firstPosition = ((HVRNPSCilBeacon)inputBeacons[0]).CalculateCenter(girthRadius);
+            var firstPosition = ((HVRNPSCilBeacon)inputBeacons[0]).CalculateCenter(_girthRadiusInWorldSpace);
             var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
             var TODO_FALLOFF = 2f;
             var TODO_MARGIN = 1f;
@@ -311,7 +313,7 @@ namespace HVR.NPS.ForCilbox
                             return (dot > 0f ? beaconForward : -beaconForward) * multiplier;
                         }
                         
-                        var nextPos = beacon.CalculateCenter(girthRadius);
+                        var nextPos = beacon.CalculateCenter(_girthRadiusInWorldSpace);
                         
                         var directionality = beacon.ActualDirectionality();
                         var beaconForward = beacon.transform.forward;
