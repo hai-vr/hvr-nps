@@ -104,7 +104,13 @@ namespace HVR.NPS
         private void SortBeacons()
         {
             _sortedBeacons.Clear();
-            _sortedBeacons.AddRange(beacons);
+            foreach (var beacon in beacons)
+            {
+                if (beacon.isActiveAndEnabled)
+                {
+                    _sortedBeacons.Add(beacon);
+                }
+            }
             
             var rootPosition = transform.position;
             _sortedBeacons.Sort((a, b) => (a.CalculateCenter(_girthRadiusInWorldSpace) - rootPosition).magnitude.CompareTo((b.CalculateCenter(_girthRadiusInWorldSpace) - rootPosition).magnitude));

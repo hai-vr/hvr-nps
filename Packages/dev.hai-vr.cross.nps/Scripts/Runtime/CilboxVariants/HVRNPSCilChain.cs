@@ -95,7 +95,13 @@ namespace HVR.NPS.ForCilbox
         private void SortBeacons()
         {
             _sortedBeacons.Clear();
-            _sortedBeacons.AddRange(beacons);
+            foreach (var beacon in beacons)
+            {
+                if (beacon.isActiveAndEnabled)
+                {
+                    _sortedBeacons.Add(beacon);
+                }
+            }
             
             __cil__rootPosition = transform.position;
             
