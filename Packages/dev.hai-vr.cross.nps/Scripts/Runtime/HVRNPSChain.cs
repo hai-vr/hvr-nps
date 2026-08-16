@@ -24,6 +24,9 @@ namespace HVR.NPS
     [AddComponentMenu("HVR/NPS/HVR NPS Chain")]
     public class HVRNPSChain : MonoBehaviour
     {
+        private const float FalloffDistance = 2f;
+        private const float MarginDistance = 1f;
+        
         public HVRNPSFinder finder;
         
         public Transform[] elements;
@@ -39,9 +42,11 @@ namespace HVR.NPS
         private float _totalLength;
         private float _curveApplies01;
         private float _girthRadiusInWorldSpace;
+        private float _currentScale;
 
-        private void OnEnable()
+        private void Start()
         {
+            _currentScale = transform.lossyScale.x;
             if (_memory == null)
             {
                 _totalLength = 0;
@@ -51,7 +56,7 @@ namespace HVR.NPS
                     var element = elements[i];
                     var segmentLength = i < elements.Length - 1
                         ? (elements[i + 1].position - element.position).magnitude
-                        : tipLength;
+                        : tipLength * _currentScale;
 
                     var standardToModel = Quaternion.Inverse(element.rotation) * transform.rotation;
                     _memory[i] = new NPSSegment
@@ -67,11 +72,14 @@ namespace HVR.NPS
                     _totalLength += segmentLength;
                 }
             }
-
             if (finder != null)
             {
                 finder.OnBeaconsChanged += WhenBeaconsChanged;
             }
+        }
+
+        private void OnEnable()
+        {
         }
 
         private void OnDisable()
@@ -97,7 +105,8 @@ namespace HVR.NPS
 
         private void Update()
         {
-            _girthRadiusInWorldSpace = girthRadius * transform.lossyScale.x;
+            _currentScale = transform.lossyScale.x;
+            _girthRadiusInWorldSpace = girthRadius * _currentScale;
             HVRQuery.Instance.TryUpdateBeaconPositions();
             SortBeacons();
             DeformElements(_sortedBeacons);
@@ -147,7 +156,7 @@ namespace HVR.NPS
             // - Apply the changes in rotation.
 
             var points = new List<NPSPoint>();
-            CalculateCurve(points, this, inputBeacons);
+            CalculateCurve(points, transform, inputBeacons);
             
             // I'm not sure when this can happen. This might be too defensive
             if (points.Count < 2)
@@ -158,9 +167,9 @@ namespace HVR.NPS
             
             var firstPosition = inputBeacons[0].CalculateCenter(_girthRadiusInWorldSpace);
             var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
-            var TODO_FALLOFF = 2f;
-            var TODO_MARGIN = 1f;
-            _curveApplies01 = Mathf.InverseLerp(_totalLength + TODO_MARGIN + TODO_FALLOFF, _totalLength + TODO_MARGIN, distanceToFirstPosition);
+            var falloff = FalloffDistance * _currentScale;
+            var margin = MarginDistance * _currentScale;
+            _curveApplies01 = Mathf.InverseLerp(_totalLength + margin + falloff, _totalLength + margin, distanceToFirstPosition);
 
             if (_curveApplies01 == 0f)
             {
@@ -280,10 +289,10 @@ namespace HVR.NPS
             return points[^1];
         }
 
-        private void CalculateCurve(List<NPSPoint> points, HVRNPSChain chain, List<HVRNPSBeacon> beacons)
+        private void CalculateCurve(List<NPSPoint> points, Transform referential, List<HVRNPSBeacon> beacons)
         {
-            var currentPos = chain.transform.position;
-            var currentDir = chain.transform.forward;
+            var currentPos = referential.position;
+            var currentDir = referential.forward;
             var k = 0;
             HVRNPSBeacon lastBeacon = null;
             
@@ -318,7 +327,7 @@ namespace HVR.NPS
                             _ => -beaconForward
                         };
                         
-                        NPSMath.PrepareSeilerInterpolation(currentPos, nextPos, currentDir, nextDir, out var b0, out var b3, out var s1, out var s2);
+                        NPSMath.PrepareSeilerInterpolation(currentPos, nextPos, currentDir * _currentScale, nextDir * _currentScale, out var b0, out var b3, out var s1, out var s2);
                         var prev = NPSMath.SeilerInterpolate(b0, b3, s1, s2, 0f);
                         points.Add(new NPSPoint(b0, nextConstriction));
                 
@@ -346,10 +355,12 @@ namespace HVR.NPS
             {
                 var dirNormalized = currentDir.normalized;
                 
-                for (var f = 0.1f; f <= _totalLength * 2; f += 0.1f)
-                {
-                    points.Add(new NPSPoint(currentPos + dirNormalized * f, nextConstriction));
-                }
+                // for (var f = 0.1f; f <= _totalLength * 2; f += 0.1f)
+                // {
+                    // points.Add(new NPSPoint(currentPos + dirNormalized * f, nextConstriction));
+                // }
+                points.Add(new NPSPoint(currentPos + dirNormalized * 0.1f, nextConstriction));
+                points.Add(new NPSPoint(currentPos + dirNormalized * (_totalLength * 2), nextConstriction));
                 
                 var color = k == 0 ? Color.cyan : Color.green;
                 color.a = 0.5f;
@@ -364,7 +375,7 @@ namespace HVR.NPS
                 var rootPos = elements[0].position;
                 var lastPos = elements[^1].position;
                 var tipNormal = (elements[^1].rotation * _memory[^1].modelToStandard)  * Vector3.forward;
-                var tipPos = lastPos + tipNormal * tipLength;
+                var tipPos = lastPos + tipNormal * (tipLength * _currentScale);
                 var normal = rootPos - lastPos;
                 Handles.color = Color.red;
                 Handles.DrawWireDisc(rootPos, normal, _girthRadiusInWorldSpace);

@@ -22,6 +22,8 @@ namespace HVR.NPS.ForCilbox
     public class HVRNPSCilChain : MonoBehaviour
     {
         private const float InterpolationStep = 0.2f;
+        private const float FalloffDistance = 2f;
+        private const float MarginDistance = 1f;
         // public HVRNPSCilFinder finder;
         
         public Transform[] elements;
@@ -43,10 +45,12 @@ namespace HVR.NPS.ForCilbox
         
         private readonly List<Vector3> _pPoints = new();
         private readonly List<float> _pConstrictions = new();
+        private float _currentScale;
 
         private void Start()
         {
             _NPSCilMath = new NPSCilMath();
+            _currentScale = transform.lossyScale.x;
             if (_memory == null)
             {
                 _totalLength = 0;
@@ -56,7 +60,7 @@ namespace HVR.NPS.ForCilbox
                     var element = elements[i];
                     var segmentLength = i < elements.Length - 1
                         ? (elements[i + 1].position - element.position).magnitude
-                        : tipLength;
+                        : tipLength * _currentScale;
 
                     var standardToModel = Quaternion.Inverse(element.rotation) * transform.rotation;
                     _memory[i] = new NPSCilSegment
@@ -87,7 +91,8 @@ namespace HVR.NPS.ForCilbox
 
         private void Update()
         {
-            _girthRadiusInWorldSpace = girthRadius * transform.lossyScale.x;
+            _currentScale = transform.lossyScale.x;
+            _girthRadiusInWorldSpace = girthRadius * _currentScale;
             SortBeacons();
             DeformElements(_sortedBeacons);
         }
@@ -140,7 +145,7 @@ namespace HVR.NPS.ForCilbox
 
             _pPoints.Clear();
             _pConstrictions.Clear();
-            CalculateCurve(this, inputBeacons);
+            CalculateCurve(transform, inputBeacons);
             
             // I'm not sure when this can happen. This might be too defensive
             if (_pPoints.Count < 2)
@@ -151,9 +156,9 @@ namespace HVR.NPS.ForCilbox
             
             var firstPosition = ((HVRNPSCilBeacon)inputBeacons[0]).CalculateCenter(_girthRadiusInWorldSpace);
             var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
-            var TODO_FALLOFF = 2f;
-            var TODO_MARGIN = 1f;
-            _curveApplies01 = Mathf.InverseLerp(_totalLength + TODO_MARGIN + TODO_FALLOFF, _totalLength + TODO_MARGIN, distanceToFirstPosition);
+            var falloff = FalloffDistance * _currentScale;
+            var margin = MarginDistance * _currentScale;
+            _curveApplies01 = Mathf.InverseLerp(_totalLength + margin + falloff, _totalLength + margin, distanceToFirstPosition);
 
             if (_curveApplies01 == 0f)
             {
@@ -208,7 +213,9 @@ namespace HVR.NPS.ForCilbox
                     Quaternion.LookRotation(forward, lastUpVector) * segment.standardToModel
                 );
 
-                var localScaleToApply = Vector3.Scale(segment.scale, new Vector3(constriction, 1f, constriction));
+                // var localScaleToApply = Vector3.Scale(segment.scale, new Vector3(constriction, 1f, constriction));
+                var localScaleToApply = Vector3.Scale(segment.scale, Vector3.one); // TODO: FIX THIS, CONSTRICTION DOESNT WORK
+                
                 if (_curveApplies01 < 1f)
                 {
                     if (idleProxies.Length == elements.Length)
@@ -293,10 +300,10 @@ namespace HVR.NPS.ForCilbox
             return _pConstrictions[^1];
         }
 
-        private void CalculateCurve(HVRNPSCilChain chain, List<object/*cilbox::HVRNPSCilBeacon*/> beacons)
+        private void CalculateCurve(Transform referential, List<object/*cilbox::HVRNPSCilBeacon*/> beacons)
         {
-            var currentPos = chain.transform.position;
-            var currentDir = chain.transform.forward;
+            var currentPos = referential.position;
+            var currentDir = referential.forward;
             var k = 0;
             HVRNPSCilBeacon lastBeacon = null;
             
@@ -332,7 +339,7 @@ namespace HVR.NPS.ForCilbox
                             _ => -beaconForward
                         };
                         
-                        _NPSCilMath.PrepareSeilerInterpolation(currentPos, nextPos, currentDir, nextDir);
+                        _NPSCilMath.PrepareSeilerInterpolation(currentPos, nextPos, currentDir * _currentScale, nextDir * _currentScale);
                         var b0 = _NPSCilMath.PrepareSeilerInterpolation_result[0];
                         var b3 = _NPSCilMath.PrepareSeilerInterpolation_result[1];
                         var s1 = _NPSCilMath.PrepareSeilerInterpolation_result[2];
@@ -363,11 +370,17 @@ namespace HVR.NPS.ForCilbox
             {
                 var dirNormalized = currentDir.normalized;
                 
-                for (var f = 0.1f; f <= _totalLength * 2; f += 0.1f)
-                {
-                    _pPoints.Add(currentPos + dirNormalized * f);
-                    _pConstrictions.Add(nextConstriction);
-                }
+                // for (var f = 0.1f; f <= _totalLength * 2; f += 0.1f)
+                // {
+                //     _pPoints.Add(currentPos + dirNormalized * f);
+                //     _pConstrictions.Add(nextConstriction);
+                // }
+                //
+                _pPoints.Add(currentPos + dirNormalized * 0.1f);
+                _pConstrictions.Add(nextConstriction);
+                
+                _pPoints.Add(currentPos + dirNormalized * (_totalLength * 2));
+                _pConstrictions.Add(nextConstriction);
             }
         }
     }
