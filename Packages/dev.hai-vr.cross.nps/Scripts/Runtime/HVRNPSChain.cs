@@ -14,7 +14,9 @@
 
 using System.Collections.Generic;
 using HVR.Query;
+#if UNITY_EDITOR // (AUDIT): UnityEditor function
 using UnityEditor;
+#endif
 using UnityEngine;
 
 namespace HVR.NPS
@@ -355,6 +357,7 @@ namespace HVR.NPS
             }
         }
 
+#if UNITY_EDITOR // (AUDIT): UnityEditor function
         private void OnDrawGizmos()
         {
             {
@@ -425,6 +428,7 @@ namespace HVR.NPS
                 // CalculateCurve(new List<NPSPoint>(), this, _sortedBeacons);
             }
         }
+#endif
 
         private struct NPSSegment
         {
