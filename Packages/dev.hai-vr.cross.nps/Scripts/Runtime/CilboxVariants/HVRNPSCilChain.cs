@@ -94,7 +94,21 @@ namespace HVR.NPS.ForCilbox
             _currentScale = transform.lossyScale.x;
             _girthRadiusInWorldSpace = girthRadius * _currentScale;
             SortBeacons();
+            IgnoreBeaconsFurtherThan(_totalLength + (MarginDistance + FalloffDistance) * _currentScale);
             DeformElements(_sortedBeacons);
+        }
+
+        private void IgnoreBeaconsFurtherThan(float maxDistance)
+        {
+            for (var i = 0; i < _sortedBeacons.Count; i++)
+            {
+                var center = ((HVRNPSCilBeacon)_sortedBeacons[i]).CalculateCenter(_girthRadiusInWorldSpace);
+                if (Vector3.Distance(center, transform.position) > maxDistance)
+                {
+                    _sortedBeacons.RemoveRange(i, _sortedBeacons.Count - i);
+                    return;
+                }
+            }
         }
 
         private void SortBeacons()
