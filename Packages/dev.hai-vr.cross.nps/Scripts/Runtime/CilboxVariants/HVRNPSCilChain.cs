@@ -114,7 +114,7 @@ namespace HVR.NPS.ForCilbox
             for (var index = 0; index < _sortedBeacons.Count -1; index++)
             {
                 HVRNPSCilBeacon sortedBeacon = (HVRNPSCilBeacon)_sortedBeacons[index];
-                if (sortedBeacon.passage == HVRNPSCilPassage.Termination)
+                if (sortedBeacon.passage == HVRNPSCilBeacon.HVRNPSCilPassage_Termination)
                 {
                     _sortedBeacons.RemoveRange(index + 1, _sortedBeacons.Count - index - 1);
                     break;
@@ -332,10 +332,10 @@ namespace HVR.NPS.ForCilbox
                         var beaconForward = beacon.transform.forward;
                         var nextDir = directionality switch
                         {
-                            HVRNPSCilDirectionality.OneWay => -beaconForward,
-                            HVRNPSCilDirectionality.ReverseWay => beaconForward,
-                            HVRNPSCilDirectionality.TwoWay => CalculateTwoWay(currentPos, nextPos, beaconForward),
-                            HVRNPSCilDirectionality.AlongNormalPlane => _NPSCilMath.Straighten((currentPos - nextPos).normalized, beacon.transform.up),
+                            HVRNPSCilBeacon.HVRNPSCilDirectionality_OneWay => -beaconForward,
+                            HVRNPSCilBeacon.HVRNPSCilDirectionality_ReverseWay => beaconForward,
+                            HVRNPSCilBeacon.HVRNPSCilDirectionality_TwoWay => CalculateTwoWay(currentPos, nextPos, beaconForward),
+                            HVRNPSCilBeacon.HVRNPSCilDirectionality_AlongNormalPlane => _NPSCilMath.Straighten((currentPos - nextPos).normalized, beacon.transform.up),
                             _ => -beaconForward
                         };
                         
@@ -361,7 +361,7 @@ namespace HVR.NPS.ForCilbox
                         currentDir = -nextDir;
                         k++;
                         lastBeacon = beacon;
-                        nextConstriction = beacon.ActualConstriction() == HVRNPSCilConstriction.ConstrictToHide ? 0f : nextConstriction;
+                        nextConstriction = beacon.ActualConstriction() == HVRNPSCilBeacon.HVRNPSCilConstriction_ConstrictToHide ? 0f : nextConstriction;
                     }
                 }
             }
