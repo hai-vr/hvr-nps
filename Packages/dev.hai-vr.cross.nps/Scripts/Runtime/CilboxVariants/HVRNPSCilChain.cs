@@ -28,6 +28,10 @@ namespace HVR.NPS.ForCilbox
         
         public Transform[] elements;
         public Transform[] idleProxies;
+        public Transform attachment; // Optional, but goes with enableWhenAttachmentIsNotIn
+        public GameObject enableWhenAttachmentIsNotIn; // Optional, but goes with attachment
+        public float enableWhenAttachmentIsNotInDurationSeconds;
+        public Animator attachmentAnimator; // Optional, but only works if (enableWhenAttachmentIsNotIn & attachment) are set.
         
         public float girthRadius = 0.5f;
         public float tipLength = 0.1f;
@@ -46,6 +50,10 @@ namespace HVR.NPS.ForCilbox
         private readonly List<Vector3> _pPoints = new();
         private readonly List<float> _pConstrictions = new();
         private float _currentScale;
+        
+        private HVRNPSCilBeacon _lastAttachmentBeacon;
+        private bool _attachmentIsIn;
+        private float _lastAttachmentTime;
 
         private void Start()
         {
@@ -96,6 +104,58 @@ namespace HVR.NPS.ForCilbox
             SortBeacons();
             IgnoreBeaconsFurtherThan(_totalLength + (MarginDistance + FalloffDistance) * _currentScale);
             DeformElements(_sortedBeacons);
+
+            if (null != attachment && null != enableWhenAttachmentIsNotIn)
+            {
+                var attachmentWasIn = _attachmentIsIn;
+                if (_sortedBeacons.Count > 0 && ((HVRNPSCilBeacon)_sortedBeacons[0]).ActualReceivesAttachments() == HVRNPSCilBeacon.HVRNPSCilReceivesAttachments_Yes)
+                {
+                    var firstPosition = ((HVRNPSCilBeacon)_sortedBeacons[0]).CalculateCenter(_girthRadiusInWorldSpace);
+                    var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
+                    if (distanceToFirstPosition < _totalLength)
+                    {
+                        _lastAttachmentBeacon = ((HVRNPSCilBeacon)_sortedBeacons[0]);
+                        _attachmentIsIn = true;
+                    }
+                    else
+                    {
+                        _attachmentIsIn = false;
+                    }
+                }
+                else
+                {
+                    _attachmentIsIn = false;
+                }
+
+                if (null != enableWhenAttachmentIsNotIn)
+                {
+                    if (_attachmentIsIn != attachmentWasIn && attachmentWasIn)
+                    {
+                        _lastAttachmentTime = Time.time;
+                        enableWhenAttachmentIsNotIn.SetActive(true);
+                    }
+                    if (enableWhenAttachmentIsNotIn.activeSelf && Time.time > _lastAttachmentTime + enableWhenAttachmentIsNotInDurationSeconds)
+                    {
+                        enableWhenAttachmentIsNotIn.SetActive(false);
+                    }
+                }
+
+                if (enableWhenAttachmentIsNotIn.activeSelf)
+                {
+                    var timeRemaining = Mathf.Clamp01(Time.time - _lastAttachmentTime / enableWhenAttachmentIsNotInDurationSeconds);
+                    if (null != attachmentAnimator && enableWhenAttachmentIsNotIn.activeSelf)
+                    {
+                        // ReSharper disable once Unity.PreferAddressByIdToGraphicsParams
+                        attachmentAnimator.SetFloat("NPS/Attachment_TimeRemaining", timeRemaining);
+                    }
+                    if (_lastAttachmentBeacon != null)
+                    {
+                        var attachmentPoint = _lastAttachmentBeacon.attachmentPoint;
+                        if (attachmentPoint == null) attachmentPoint = _lastAttachmentBeacon.transform;
+                        attachment.SetPositionAndRotation(attachmentPoint.position, attachmentPoint.rotation);
+                    }
+                }
+            }
         }
 
         private void IgnoreBeaconsFurtherThan(float maxDistance)

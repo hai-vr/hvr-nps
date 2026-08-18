@@ -67,10 +67,16 @@ namespace HVR.NPS.ForCilbox
         /// Can accept entrance in any direction going through the plane defined by the up vector (green).
         internal const int HVRNPSCilDirectionality_AlongNormalPlane = 4;
         
+        internal const int HVRNPSCilReceivesAttachments_Default = 0;
+        internal const int HVRNPSCilReceivesAttachments_Yes = 1;
+        internal const int HVRNPSCilReceivesAttachments_No = 2;
+        
         public int passage;
         public int alignment;
         public int constriction;
         public int directionality;
+        public int receivesAttachments;
+        public Transform attachmentPoint;
 
         public HVRNPSCilBeacon[] next;
         
@@ -101,6 +107,13 @@ namespace HVR.NPS.ForCilbox
             if (directionality != HVRNPSCilDirectionality_Default) return directionality;
             
             return passage == HVRNPSCilPassage_Termination ? HVRNPSCilDirectionality_OneWay : HVRNPSCilDirectionality_TwoWay;
+        }
+
+        public int ActualReceivesAttachments()
+        {
+            if (receivesAttachments != HVRNPSCilReceivesAttachments_Default) return receivesAttachments;
+            
+            return passage == HVRNPSCilPassage_Termination ? HVRNPSCilReceivesAttachments_Yes : HVRNPSCilReceivesAttachments_No;
         }
     }
 }
