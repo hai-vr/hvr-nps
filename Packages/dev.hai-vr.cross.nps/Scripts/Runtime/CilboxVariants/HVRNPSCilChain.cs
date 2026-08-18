@@ -44,7 +44,7 @@ namespace HVR.NPS.ForCilbox
         private float _curveApplies01;
         private float _girthRadiusInWorldSpace;
         private NPSCilMath _NPSCilMath;
-        private Vector3 __cil__rootPosition;
+        private Vector3 _rootPosition;
         private readonly List<float> _distances = new();
         
         private readonly List<Vector3> _pPoints = new();
@@ -99,61 +99,83 @@ namespace HVR.NPS.ForCilbox
 
         private void Update()
         {
+            _rootPosition = elements[0].transform.position;
+            
             _currentScale = transform.lossyScale.x;
             _girthRadiusInWorldSpace = girthRadius * _currentScale;
             SortBeacons();
             IgnoreBeaconsFurtherThan(_totalLength + (MarginDistance + FalloffDistance) * _currentScale);
             DeformElements(_sortedBeacons);
+            HandleAttachment();
+        }
 
-            if (null != attachment && null != enableWhenAttachmentIsNotIn)
+        private void HandleAttachment()
+        {
+            if (null == attachment || null == enableWhenAttachmentIsNotIn) return;
+            
+            var attachmentWasIn = _attachmentIsIn;
+            if (_sortedBeacons.Count > 0)
             {
-                var attachmentWasIn = _attachmentIsIn;
-                if (_sortedBeacons.Count > 0 && ((HVRNPSCilBeacon)_sortedBeacons[0]).ActualReceivesAttachments() == HVRNPSCilBeacon.HVRNPSCilReceivesAttachments_Yes)
+                var found = false;
+                var initialPosition = _rootPosition;
+                var remainingLength = _totalLength;
+                for (var i = 0; i < _sortedBeacons.Count; i++)
                 {
-                    var firstPosition = ((HVRNPSCilBeacon)_sortedBeacons[0]).CalculateCenter(_girthRadiusInWorldSpace);
-                    var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
-                    if (distanceToFirstPosition < _totalLength)
+                    var that = (HVRNPSCilBeacon)_sortedBeacons[i];
+                    var thatPosition = that.CalculateCenter(_girthRadiusInWorldSpace);
+                    if (that.ActualReceivesAttachments() == HVRNPSCilBeacon.HVRNPSCilReceivesAttachments_Yes)
                     {
-                        _lastAttachmentBeacon = ((HVRNPSCilBeacon)_sortedBeacons[0]);
-                        _attachmentIsIn = true;
+                        var firstPosition = thatPosition;
+                        var distanceToFirstPosition = Vector3.Distance(initialPosition, firstPosition);
+                        if (distanceToFirstPosition < remainingLength)
+                        {
+                            _lastAttachmentBeacon = that;
+                            _attachmentIsIn = true;
+                            found = true;
+                            break;
+                        }
                     }
-                    else
-                    {
-                        _attachmentIsIn = false;
-                    }
+
+                    remainingLength -= (initialPosition - thatPosition).magnitude;
+                    initialPosition = thatPosition;
                 }
-                else
+
+                if (!found)
                 {
                     _attachmentIsIn = false;
                 }
+            }
+            else
+            {
+                _attachmentIsIn = false;
+            }
 
-                if (null != enableWhenAttachmentIsNotIn)
+            if (null != enableWhenAttachmentIsNotIn)
+            {
+                if (_attachmentIsIn != attachmentWasIn && attachmentWasIn)
                 {
-                    if (_attachmentIsIn != attachmentWasIn && attachmentWasIn)
-                    {
-                        _lastAttachmentTime = Time.time;
-                        enableWhenAttachmentIsNotIn.SetActive(true);
-                    }
-                    if (enableWhenAttachmentIsNotIn.activeSelf && Time.time > _lastAttachmentTime + enableWhenAttachmentIsNotInDurationSeconds)
-                    {
-                        enableWhenAttachmentIsNotIn.SetActive(false);
-                    }
+                    _lastAttachmentTime = Time.time;
+                    enableWhenAttachmentIsNotIn.SetActive(true);
                 }
-
-                if (enableWhenAttachmentIsNotIn.activeSelf)
+                if (enableWhenAttachmentIsNotIn.activeSelf && Time.time > _lastAttachmentTime + enableWhenAttachmentIsNotInDurationSeconds)
                 {
-                    var timeRemaining = Mathf.Clamp01(Time.time - _lastAttachmentTime / enableWhenAttachmentIsNotInDurationSeconds);
-                    if (null != attachmentAnimator && enableWhenAttachmentIsNotIn.activeSelf)
-                    {
-                        // ReSharper disable once Unity.PreferAddressByIdToGraphicsParams
-                        attachmentAnimator.SetFloat("NPS/Attachment_TimeRemaining", timeRemaining);
-                    }
-                    if (_lastAttachmentBeacon != null)
-                    {
-                        var attachmentPoint = _lastAttachmentBeacon.attachmentPoint;
-                        if (attachmentPoint == null) attachmentPoint = _lastAttachmentBeacon.transform;
-                        attachment.SetPositionAndRotation(attachmentPoint.position, attachmentPoint.rotation);
-                    }
+                    enableWhenAttachmentIsNotIn.SetActive(false);
+                }
+            }
+
+            if (enableWhenAttachmentIsNotIn.activeSelf)
+            {
+                var timeRemaining = Mathf.Clamp01(Time.time - _lastAttachmentTime / enableWhenAttachmentIsNotInDurationSeconds);
+                if (null != attachmentAnimator && enableWhenAttachmentIsNotIn.activeSelf)
+                {
+                    // ReSharper disable once Unity.PreferAddressByIdToGraphicsParams
+                    attachmentAnimator.SetFloat("NPS/Attachment_TimeRemaining", timeRemaining);
+                }
+                if (_lastAttachmentBeacon != null)
+                {
+                    var attachmentPoint = _lastAttachmentBeacon.attachmentPoint;
+                    if (attachmentPoint == null) attachmentPoint = _lastAttachmentBeacon.transform;
+                    attachment.SetPositionAndRotation(attachmentPoint.position, attachmentPoint.rotation);
                 }
             }
         }
@@ -163,7 +185,7 @@ namespace HVR.NPS.ForCilbox
             for (var i = 0; i < _sortedBeacons.Count; i++)
             {
                 var center = ((HVRNPSCilBeacon)_sortedBeacons[i]).CalculateCenter(_girthRadiusInWorldSpace);
-                if (Vector3.Distance(center, transform.position) > maxDistance)
+                if (Vector3.Distance(center, _rootPosition) > maxDistance)
                 {
                     _sortedBeacons.RemoveRange(i, _sortedBeacons.Count - i);
                     return;
@@ -182,8 +204,6 @@ namespace HVR.NPS.ForCilbox
                 }
             }
             
-            __cil__rootPosition = transform.position;
-            
             _sortedBeacons.Sort(SortBeaconsCompareFn);
             for (var index = 0; index < _sortedBeacons.Count -1; index++)
             {
@@ -200,7 +220,7 @@ namespace HVR.NPS.ForCilbox
         {
             var a = (HVRNPSCilBeacon)a_cil;
             var b = (HVRNPSCilBeacon)b_cil;
-            return (a.CalculateCenter(_girthRadiusInWorldSpace) - __cil__rootPosition).magnitude.CompareTo((b.CalculateCenter(_girthRadiusInWorldSpace) - __cil__rootPosition).magnitude);
+            return (a.CalculateCenter(_girthRadiusInWorldSpace) - _rootPosition).magnitude.CompareTo((b.CalculateCenter(_girthRadiusInWorldSpace) - _rootPosition).magnitude);
         }
 
         public void DeformElements(List<object/*cilbox::HVRNPSCilBeacon*/> inputBeacons)
@@ -229,7 +249,7 @@ namespace HVR.NPS.ForCilbox
             }
             
             var firstPosition = ((HVRNPSCilBeacon)inputBeacons[0]).CalculateCenter(_girthRadiusInWorldSpace);
-            var distanceToFirstPosition = Vector3.Distance(elements[0].transform.position, firstPosition);
+            var distanceToFirstPosition = Vector3.Distance(_rootPosition, firstPosition);
             var falloff = FalloffDistance * _currentScale;
             var margin = MarginDistance * _currentScale;
             _curveApplies01 = Mathf.InverseLerp(_totalLength + margin + falloff, _totalLength + margin, distanceToFirstPosition);
