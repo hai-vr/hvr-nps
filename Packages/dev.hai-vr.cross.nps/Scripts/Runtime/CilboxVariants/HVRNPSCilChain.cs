@@ -152,22 +152,36 @@ namespace HVR.NPS.ForCilbox
 
             if (null != enableWhenAttachmentIsNotIn)
             {
-                if (_attachmentIsIn != attachmentWasIn && attachmentWasIn)
+                if (_attachmentIsIn != attachmentWasIn)
                 {
-                    _lastAttachmentTime = Time.time;
-                    enableWhenAttachmentIsNotIn.SetActive(true);
+                    if (_attachmentIsIn)
+                    {
+                        if (null != attachmentAnimator)
+                        {
+                            attachmentAnimator.SetFloat("NPS/Attachment_TimeRemaining", 0f);
+                        }
+                    }
+                    if (attachmentWasIn)
+                    {
+                        _lastAttachmentTime = Time.time;
+                        enableWhenAttachmentIsNotIn.SetActive(true);
+                    }
                 }
                 if (enableWhenAttachmentIsNotIn.activeSelf && Time.time > _lastAttachmentTime + enableWhenAttachmentIsNotInDurationSeconds)
                 {
+                    if (null != attachmentAnimator)
+                    {
+                        attachmentAnimator.SetFloat("NPS/Attachment_TimeRemaining", 0f);
+                    }
                     enableWhenAttachmentIsNotIn.SetActive(false);
                 }
             }
 
             if (enableWhenAttachmentIsNotIn.activeSelf)
             {
-                var timeRemaining = Mathf.Clamp01(Time.time - _lastAttachmentTime / enableWhenAttachmentIsNotInDurationSeconds);
-                if (null != attachmentAnimator && enableWhenAttachmentIsNotIn.activeSelf)
+                if (!_attachmentIsIn && null != attachmentAnimator && enableWhenAttachmentIsNotIn.activeSelf)
                 {
+                    var timeRemaining = Mathf.Clamp01(1 - (Time.time - _lastAttachmentTime) / enableWhenAttachmentIsNotInDurationSeconds);
                     // ReSharper disable once Unity.PreferAddressByIdToGraphicsParams
                     attachmentAnimator.SetFloat("NPS/Attachment_TimeRemaining", timeRemaining);
                 }
