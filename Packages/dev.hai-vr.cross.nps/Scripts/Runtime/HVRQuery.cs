@@ -20,15 +20,42 @@ using UnityEngine.Rendering;
 
 namespace HVR.Query
 {
-    public interface IHVRBeacon
+    public sealed class HVRQueryBeacon
     {
-        Transform AsTransform { get; }
+        private readonly Component _component;
+        private readonly Dictionary<string, object> _scriptingData = new();
+        
+        public HVRQueryBeacon(Component component)
+        {
+            _component = component;
+        }
+
+        public void InitializeScriptValue(string key, object value) { _scriptingData.TryAdd(key, value); }
+        public bool TryGetScriptValue(string key, out object value) { return _scriptingData.TryGetValue(key, out value); }
+        public object HasScriptValue(string key) { return _scriptingData.ContainsKey(key); }
+        public object GetScriptValue(string key) { return _scriptingData[key]; }
+
+        public Component Component => _component;
+        public Transform AsTransform => _component.transform;
     }
 
-    public interface IHVRFinder
+    public sealed class HVRQueryFinder
     {
-        Transform AsTransform { get; }
-        float Range { get; }
+        private readonly Component _component;
+        private readonly float _range;
+        private readonly HVRQuery.BeaconEnterOrExit _whenBeaconEnterOrExit;
+
+        public HVRQueryFinder(Component component, float range, HVRQuery.BeaconEnterOrExit whenBeaconEnterOrExit)
+        {
+            _component = component;
+            _range = range;
+            _whenBeaconEnterOrExit = whenBeaconEnterOrExit;
+        }
+        
+        public Component Component => _component;
+        public Transform AsTransform => _component.transform;
+        public float Range => _range;
+        public HVRQuery.BeaconEnterOrExit WhenBeaconEnterOrExit => _whenBeaconEnterOrExit;
     }
     
     /// Every 0.1 second, we will check if beacons have entered or exited the range of finders.
@@ -44,14 +71,13 @@ namespace HVR.Query
         private static readonly int BeaconCount = Shader.PropertyToID("BeaconCount");
         private static readonly int FinderCount = Shader.PropertyToID("FinderCount");
 
-        public delegate void BeaconEnterOrExit(IHVRBeacon beacon, bool isEntering);
+        public delegate void BeaconEnterOrExit(HVRQueryBeacon beacon, bool isEntering);
         
         public static HVRQuery Instance { get; private set; } = new();
         
-        private readonly List<IHVRBeacon> _beacons = new();
-        private readonly List<IHVRFinder> _finderKeys = new();
-        private readonly Dictionary<IHVRFinder, BeaconEnterOrExit> _finderToCallbackDict = new();
-        private readonly Dictionary<IHVRFinder, HashSet<IHVRBeacon>> _finderToBeaconsDict = new();
+        private readonly List<HVRQueryBeacon> _beacons = new();
+        private readonly List<HVRQueryFinder> _finderKeys = new();
+        private readonly Dictionary<HVRQueryFinder, HashSet<HVRQueryBeacon>> _finderToBeaconsDict = new();
 
         private ComputeShader _proximityShader;
         private AsyncOperationHandle<ComputeShader> _shaderHandle;
@@ -83,52 +109,45 @@ namespace HVR.Query
             }
         }
         
-        public void Register(IHVRBeacon beacon)
+        public void Register(HVRQueryBeacon beacon)
         {
-            if (!_beacons.Contains(beacon)) _beacons.Add(beacon);
-        }
-
-        public void Unregister(IHVRBeacon beacon)
-        {
-            _beacons.Remove(beacon);
-            foreach (var finderPair in _finderToBeaconsDict)
+            if (!_beacons.Contains(beacon))
             {
-                var finder = finderPair.Key;
-                var finderToBeacons = finderPair.Value;
-                if (finderToBeacons.Remove(beacon))
-                {
-                    _finderToCallbackDict[finder](beacon, false);
-                }
+                _beacons.Add(beacon);
+                Debug.Log($"Registering beacon {beacon.Component.name}.");
             }
         }
 
-        public void Unregister(IHVRFinder finder)
+        public void Unregister(HVRQueryBeacon beacon)
         {
-            if (_finderToBeaconsDict.TryGetValue(finder, out var finderToBeacons))
+            if (_beacons.Remove(beacon))
             {
-                _tempBeacons.Clear();
-                _tempBeacons.AddRange(finderToBeacons);
-                foreach (var beacon in _tempBeacons)
-                {
-                    _finderToCallbackDict[finder](beacon, false);
-                }
+                Debug.Log($"Unregistered beacon {beacon.Component.name}.");
             }
+        }
 
-            _finderKeys.Remove(finder);
-            _finderToCallbackDict.Remove(finder);
+        public void Unregister(HVRQueryFinder finder)
+        {
+            if (_finderKeys.Remove(finder))
+            {
+                Debug.Log($"Unregistered finder {finder.Component.name}.");
+            }
             _finderToBeaconsDict.Remove(finder);
         }
 
-        public void Register(IHVRFinder finder, BeaconEnterOrExit beaconEnterOrExit)
+        public void Register(HVRQueryFinder finder)
         {
-            if (!_finderToCallbackDict.ContainsKey(finder))
+            if (!_finderToBeaconsDict.ContainsKey(finder))
             {
                 _finderKeys.Add(finder);
-                _finderToBeaconsDict[finder] = new HashSet<IHVRBeacon>();
+                _finderToBeaconsDict[finder] = new HashSet<HVRQueryBeacon>();
+                Debug.Log($"Registered finder {finder.Component.name}.");
             }
-            _finderToCallbackDict[finder] = beaconEnterOrExit;
         }
 
+        /// Request the Query to update itself and eventually emit events if necessary the next time this function is invoked.
+        /// It is safe to call this function from multiple different components on the same frame as there is a hard limit in place
+        /// (once every 0.1 seconds).
         public void TryUpdateBeaconPositions()
         {
             ScheduleUpdateBeaconPositions();
@@ -231,8 +250,6 @@ namespace HVR.Query
             _isDataReady = false;
         }
 
-        private readonly List<IHVRBeacon> _tempBeacons = new();
-
         private void ProcessResults()
         {
             var beaconCount = _scheduledBeaconCount;
@@ -241,7 +258,7 @@ namespace HVR.Query
             for (var f = 0; f < finderCount; f++)
             {
                 var finder = _finderKeys[f];
-                var onBeaconEnterOrExit = _finderToCallbackDict[finder];
+                var onBeaconEnterOrExit = finder.WhenBeaconEnterOrExit;
                 var containedBeacons = _finderToBeaconsDict[finder];
 
                 for (var b = 0; b < beaconCount; b++)
